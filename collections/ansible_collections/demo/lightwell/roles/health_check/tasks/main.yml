@@ -1,0 +1,43 @@
+---
+- name: Wait for the application container to report running
+  containers.podman.podman_container_info:
+    name: "{{ app_container_name }}"
+  register: health_container_info
+  until: >-
+    health_container_info.containers is defined and
+    health_container_info.containers | length > 0 and
+    health_container_info.containers[0].State.Running
+  retries: "{{ health_check_container_retries }}"
+  delay: "{{ health_check_container_delay }}"
+
+- name: Poll the application health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ health_check_host | default(ansible_host) | default('localhost') }}:{{ app_host_port }}/healthz"
+    method: GET
+    status_code: 200
+    return_content: true
+  register: health_response
+  until: health_response.status == 200
+  retries: "{{ health_check_http_retries }}"
+  delay: "{{ health_check_http_delay }}"
+  failed_when: false
+
+- name: Determine the health check result
+  ansible.builtin.set_fact:
+    health_check_passed: >-
+      {{ (health_response.status | default(0)) == 200 and
+         (health_response.json.status | default('')) == 'ok' }}
+
+- name: Report the health check outcome
+  ansible.builtin.debug:
+    msg: >-
+      Health check {{ 'PASSED' if health_check_passed else 'FAILED' }} for
+      {{ app_container_name }} in {{ app_environment }}
+      (HTTP {{ health_response.status | default('n/a') }}).
+
+- name: Fail the play when the health check does not pass and strict mode is enabled
+  ansible.builtin.fail:
+    msg: "Health check failed for {{ app_container_name }} in {{ app_environment }}."
+  when:
+    - not health_check_passed
+    - health_check_strict | bool

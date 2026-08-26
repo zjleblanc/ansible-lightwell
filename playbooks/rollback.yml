@@ -1,0 +1,11 @@
+---
+# Standalone rollback playbook. Can be run manually from AAP (e.g. as an
+# on-demand job template) against either environment by setting
+# target_environment to "test" or "prod" as an extra var.
+- name: Roll back the Lightwell demo application to its previous version
+  hosts: "{{ target_environment | default('prod') }}"
+  gather_facts: true
+  vars:
+    app_environment: "{{ target_environment | default('prod') }}"
+  roles:
+    - role: demo.lightwell.rollback

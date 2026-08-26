@@ -1,0 +1,18 @@
+---
+# Location of the checked-out application source (defaults to the app/
+# directory alongside this repository's playbooks, i.e. the AAP project
+# working directory).
+app_source_dir: "{{ playbook_dir }}/../app"
+
+# Lightwell Network remediated repository used to authenticate the
+# build-time pip install. lightwell_username / lightwell_password must be
+# supplied via an AAP credential (or Ansible Vault) -- never hard-code them
+# here or anywhere else in this repository.
+lightwell_registry_host: packages.redhat.com
+
+# Container image coordinates.
+app_image_registry: quay.io/lightwell-demo
+app_image_name: lightwell-patch-demo
+app_image_tag: "{{ app_git_sha | default('dev') }}"
+app_image_push: true
+app_environment: test

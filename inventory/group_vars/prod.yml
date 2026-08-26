@@ -1,0 +1,5 @@
+---
+app_environment: prod
+app_host_port: 8080
+ansible_user: ansible
+health_check_strict: false

@@ -1,0 +1,11 @@
+---
+# Third-party collections required by demo.lightwell (see
+# collections/ansible_collections/demo/lightwell). Install with:
+#   ansible-galaxy collection install -r collections/requirements.yml -p ./collections
+collections:
+  - name: containers.podman
+    version: ">=1.14.0"
+  - name: community.general
+    version: ">=9.0.0"
+  - name: ansible.posix
+    version: ">=1.6.0"

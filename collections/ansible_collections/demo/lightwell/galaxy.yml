@@ -1,0 +1,25 @@
+---
+namespace: demo
+name: lightwell
+version: 1.0.0
+readme: README.md
+authors:
+  - Lightwell Demo Team
+description: >-
+  Roles for building, deploying, health-checking, and rolling back the
+  Lightwell Patch Pipeline demo application on Podman, as part of an
+  Ansible Automation Platform pipeline triggered by Renovate and GitHub
+  webhooks.
+license:
+  - MIT
+tags:
+  - security
+  - infrastructure
+  - lightwell
+  - podman
+  - patching
+  - deployment
+  - demo
+repository: https://github.com/zjleblanc/ansible-lightwell
+issues: https://github.com/zjleblanc/ansible-lightwell/issues
+build_ignore: []

@@ -1,0 +1,27 @@
+---
+# Triggered by the AAP job template webhook on GitHub pull_request events.
+# Builds the application image from the PR branch and deploys it to the
+# test environment, then verifies it with a strict health check.
+- name: Build the Lightwell demo application image
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    app_environment: test
+  roles:
+    - role: demo.lightwell.build_app
+
+- name: Deploy and verify the Lightwell demo application in test
+  hosts: test
+  gather_facts: true
+  vars:
+    app_environment: test
+  roles:
+    - role: demo.lightwell.deploy_app
+    - role: demo.lightwell.health_check
+  post_tasks:
+    - name: Surface the outcome for AAP / webhook status reporting
+      ansible.builtin.debug:
+        msg: >-
+          Test deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
+          for image {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.

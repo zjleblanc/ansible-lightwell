@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Ansible
+*.retry
+.ansible/
+
+# Third-party collections installed via
+# `ansible-galaxy collection install -r collections/requirements.yml`.
+# Our own demo.lightwell collection source stays tracked.
+collections/ansible_collections/*
+!collections/ansible_collections/demo/
+
+# Secrets and local overrides -- Lightwell credentials, .netrc files, and
+# vault secrets must never be committed to this repository.
+.netrc
+*.vault
+vault_pass.txt
+.env
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/

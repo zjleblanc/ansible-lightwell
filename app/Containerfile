@@ -1,0 +1,37 @@
+# Lightwell Patch Pipeline Demo -- application image
+#
+# Lightwell Network authentication is supplied at build time via a Podman
+# build secret named "netrc" (see docs/aap-setup.md). No credentials are
+# ever baked into image layers or committed to this repository.
+
+FROM registry.access.redhat.com/ubi9/python-312:latest AS builder
+
+WORKDIR /opt/app-root/src
+
+COPY requirements.txt ./
+
+RUN --mount=type=secret,id=netrc,target=/opt/app-root/src/.netrc,mode=0600 \
+    pip install --no-cache-dir --user -r requirements.txt
+
+FROM registry.access.redhat.com/ubi9/python-312:latest
+
+WORKDIR /opt/app-root/src
+
+COPY --from=builder /opt/app-root/src/.local /opt/app-root/src/.local
+COPY app.py ./
+COPY templates/ templates/
+COPY static/ static/
+COPY config/ config/
+
+ENV PATH="/opt/app-root/src/.local/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -fs http://localhost:8080/healthz || exit 1
+
+USER 1001
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "app:app"]

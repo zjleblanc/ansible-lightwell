@@ -1,0 +1,28 @@
+title = "Lightwell Demo Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+# Lightwell Network service account usernames take the form
+# "<numeric-account-id>|<service-account-name>".
+[[rules]]
+id = "lightwell-service-account-username"
+description = "Lightwell Network service account username"
+regex = '''\b\d{6,}\|[a-zA-Z0-9_-]+\b'''
+tags = ["lightwell", "credentials"]
+
+# Lightwell Network service account tokens are RS-signed JWTs.
+[[rules]]
+id = "lightwell-jwt-token"
+description = "JWT-style bearer token, as issued for Lightwell Network service accounts"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["jwt", "credentials"]
+
+# Catches an accidentally committed .netrc-style credential block, which
+# this project generates at build time but must never persist to disk in
+# the repository itself.
+[[rules]]
+id = "netrc-credential-block"
+description = "machine/login/password triplet typical of a .netrc file"
+regex = '''(?i)machine\s+\S+\s+login\s+\S+\s+password\s+\S+'''
+tags = ["netrc", "credentials"]

@@ -1,0 +1,75 @@
+---
+- name: Ensure the rollback state directory exists
+  ansible.builtin.file:
+    path: "{{ app_previous_image_file | dirname }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Log in to the container registry
+  containers.podman.podman_login:
+    username: "{{ registry_username }}"
+    password: "{{ registry_password }}"
+    registry: "{{ app_image_registry.split('/')[0] }}"
+  when:
+    - registry_username is defined
+    - registry_password is defined
+  no_log: true
+
+- name: Capture the currently running container, if any
+  containers.podman.podman_container_info:
+    name: "{{ app_container_name }}"
+  register: current_container_info
+  failed_when: false
+
+- name: Record the previous image reference as a fact
+  ansible.builtin.set_fact:
+    previous_app_image: >-
+      {{ current_container_info.containers[0].Config.Image
+         if (current_container_info.containers is defined and current_container_info.containers | length > 0)
+         else '' }}
+
+- name: Persist the previous image reference for use by the rollback role
+  ansible.builtin.copy:
+    dest: "{{ app_previous_image_file }}"
+    content: "{{ previous_app_image }}"
+    mode: "0644"
+  become: true
+  when: previous_app_image | length > 0
+
+- name: Pull the target application image
+  containers.podman.podman_image:
+    name: "{{ app_image_registry }}/{{ app_image_name }}"
+    tag: "{{ app_image_tag }}"
+    pull: true
+
+- name: Deploy the application container
+  containers.podman.podman_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
+    state: started
+    recreate: true
+    ports:
+      - "{{ app_host_port }}:8080"
+    restart_policy: always
+    env:
+      PORT: "8080"
+      APP_ENVIRONMENT: "{{ app_environment }}"
+  register: deploy_result
+
+- name: Generate a systemd unit for the application container
+  containers.podman.podman_generate_systemd:
+    name: "{{ app_container_name }}"
+    dest: "{{ systemd_unit_dir }}"
+    restart_policy: always
+    new: true
+  become: true
+  when: manage_systemd_unit | bool
+
+- name: Reload systemd and enable the generated unit
+  ansible.builtin.systemd:
+    name: "container-{{ app_container_name }}.service"
+    daemon_reload: true
+    enabled: true
+  become: true
+  when: manage_systemd_unit | bool

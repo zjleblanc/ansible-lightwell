@@ -1,0 +1,4 @@
+---
+app_image_registry: quay.io/lightwell-demo
+app_image_name: lightwell-patch-demo
+lightwell_registry_host: packages.redhat.com

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lightwell Patch Pipeline Demo{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="glow-well" aria-hidden="true"></div>
+    <header class="site-header">
+        <div class="brand">
+            <span class="brand-mark">&#9679;</span>
+            <span class="brand-name">Lightwell</span>
+            <span class="brand-sub">Patch Pipeline Demo</span>
+        </div>
+        <nav>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('healthz') }}">Health</a>
+            <a href="{{ url_for('api_config') }}">Config API</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>Rendered with Jinja2 &middot; Config loaded with PyYAML &middot; Patched by Red Hat &amp; IBM Lightwell</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,6 @@
+---
+health_check_container_retries: 10
+health_check_container_delay: 3
+health_check_http_retries: 10
+health_check_http_delay: 5
+health_check_strict: true

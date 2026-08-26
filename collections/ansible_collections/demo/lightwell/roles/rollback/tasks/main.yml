@@ -1,0 +1,50 @@
+---
+- name: Read the previously deployed image reference
+  ansible.builtin.slurp:
+    src: "{{ app_previous_image_file }}"
+  register: previous_image_raw
+  become: true
+  failed_when: false
+
+- name: Fail if no previous image is recorded
+  ansible.builtin.fail:
+    msg: >-
+      No previous image reference found at {{ app_previous_image_file }}.
+      Cannot roll back {{ app_container_name }} automatically -- manual
+      intervention is required.
+  when: previous_image_raw.content is not defined
+
+- name: Decode the previous image reference
+  ansible.builtin.set_fact:
+    rollback_image: "{{ previous_image_raw.content | b64decode | trim }}"
+
+- name: Stop the currently failing container
+  containers.podman.podman_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+
+- name: Redeploy the previous known-good image
+  containers.podman.podman_container:
+    name: "{{ app_container_name }}"
+    image: "{{ rollback_image }}"
+    state: started
+    recreate: true
+    ports:
+      - "{{ app_host_port }}:8080"
+    restart_policy: always
+    env:
+      PORT: "8080"
+      APP_ENVIRONMENT: "{{ app_environment }}"
+
+- name: Re-run the health check against the rolled-back version
+  ansible.builtin.include_role:
+    name: demo.lightwell.health_check
+  vars:
+    health_check_strict: false
+
+- name: Report the rollback outcome
+  ansible.builtin.debug:
+    msg: >-
+      Rollback to {{ rollback_image }} {{ 'succeeded' if health_check_passed
+      else 'FAILED -- manual intervention required' }} for
+      {{ app_container_name }} in {{ app_environment }}.

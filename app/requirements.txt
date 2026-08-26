@@ -1,0 +1,6 @@
+--extra-index-url https://packages.redhat.com/lightwell/python/remediated/simple
+
+Flask==3.1.1
+PyYAML==6.0.2
+Jinja2==3.1.6
+gunicorn==23.0.0

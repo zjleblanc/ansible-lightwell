@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <h1>{{ service.name }}</h1>
+    <p class="tagline">{{ service.description }}</p>
+    <span class="version-pill">v{{ service.version }}</span>
+</section>
+
+<section class="grid">
+    <div class="card">
+        <h2>Dependency Status</h2>
+        <ul class="package-list">
+            {% for pkg in package_versions %}
+            <li>
+                <div>
+                    <span class="pkg-name">{{ pkg.name }}</span>
+                    <span class="pkg-version">{{ pkg.version }}</span>
+                </div>
+                {% if pkg.is_patched %}
+                <span class="badge badge-patched">Lightwell Patched</span>
+                {% else %}
+                <span class="badge badge-standard">Standard</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Tracked Libraries</h2>
+        <ul class="package-list">
+            {% for dep in dependencies %}
+            <li>
+                <div>
+                    <span class="pkg-name">{{ dep.name }}</span>
+                </div>
+                <span class="pkg-role">{{ dep.role }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Feature Flags</h2>
+        <ul class="feature-list">
+            {% for key, value in features.items() %}
+            <li>
+                <span class="feature-key">{{ key.replace('_', ' ') | title }}</span>
+                <span class="feature-toggle {{ 'on' if value else 'off' }}">{{ 'ON' if value else 'OFF' }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="timeline">
+    <h2>Patch Timeline</h2>
+    <ol>
+        {% for entry in patch_timeline %}
+        <li>
+            <span class="timeline-date">{{ entry.date }}</span>
+            <span class="timeline-version">{{ entry.version }}</span>
+            <span class="timeline-event">{{ entry.event }}</span>
+        </li>
+        {% endfor %}
+    </ol>
+</section>
+
+<p class="timestamp">Last rendered: {{ now.strftime('%Y-%m-%d %H:%M:%S UTC') }}</p>
+{% endblock %}
