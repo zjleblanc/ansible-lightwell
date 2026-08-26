@@ -6,7 +6,10 @@ A hands-on demo of a fully automated Python dependency patch pipeline:
 supplies remediated (`.rhlw`-patched) Python packages, **Renovate** watches
 for and proposes those patches as pull requests, and **Ansible Automation
 Platform (AAP)** builds, tests, promotes, and -- if something goes wrong --
-rolls back the application, all triggered by GitHub webhooks.
+rolls back the application. GitHub events are routed through a single
+**Event-Driven Ansible (EDA) Event Stream** rather than per-job-template
+webhooks, and status is reported back to GitHub using a token minted from
+a GitHub App installation instead of a static personal access token.
 
 ## Why this exists
 
@@ -23,14 +26,17 @@ real, auditable deployment pipeline instead of installing patches by hand.
 flowchart TD
     RenovateBot["Renovate Bot"] -->|"Scans app/requirements.txt against\nLightwell Remediated index"| DetectPatch["Detects new .rhlw patch\n(e.g. PyYAML 6.0.2.rhlw-00001)"]
     DetectPatch -->|"Creates PR"| GitHubPR["GitHub Pull Request"]
-    GitHubPR -->|"Webhook (pull_request event)"| AAP_Test["AAP Job Template:\nLightwell - Build & Test"]
+    GitHubPR -->|"Webhook (pull_request event)"| EventStream["EDA Event Stream\n(GitHub Event Stream credential)"]
+    EventStream --> Rulebook["Rulebook Activation\neda/rulebooks/lightwell_webhook.yml"]
+    Rulebook -->|"run_job_template"| AAP_Test["AAP Job Template:\nLightwell - Build & Test"]
     AAP_Test --> BuildImg["Build Container Image\n(Podman)"]
     BuildImg --> DeployTest["Deploy to Test\n(Podman on RHEL)"]
     DeployTest --> HealthTest["Health Check\n(Test Environment)"]
-    HealthTest -->|"Pass"| ApprovePR["Status posted to PR:\nChecks Pass"]
-    HealthTest -->|"Fail"| FailPR["Status posted to PR:\nChecks Fail"]
+    HealthTest -->|"Pass"| ApprovePR["report_status role posts to PR:\nChecks Pass (GitHub App token)"]
+    HealthTest -->|"Fail"| FailPR["report_status role posts to PR:\nChecks Fail (GitHub App token)"]
     ApprovePR -->|"Reviewer approves & merges"| MergeMain["Merge to main"]
-    MergeMain -->|"Webhook (push event)"| AAP_Prod["AAP Job Template:\nLightwell - Deploy Prod"]
+    MergeMain -->|"Webhook (push event)"| EventStream
+    Rulebook -->|"run_job_template"| AAP_Prod["AAP Job Template:\nLightwell - Deploy Prod"]
     AAP_Prod --> DeployProd["Deploy to Prod\n(Podman on RHEL)"]
     DeployProd --> HealthProd["Health Check\n(Prod Environment)"]
     HealthProd -->|"Pass"| Done["Deployment Complete"]
@@ -50,18 +56,22 @@ ansible-lightwell/
 │   ├── tests/              # pytest suite
 │   └── Containerfile
 ├── playbooks/
-│   ├── deploy_test.yml     # Build + deploy to test (PR webhook)
-│   ├── deploy_prod.yml     # Deploy to prod + health check + rollback (push webhook)
+│   ├── deploy_test.yml     # Build + deploy to test (launched via EDA on PR events)
+│   ├── deploy_prod.yml     # Deploy to prod + health check + rollback (launched via EDA on push to main)
 │   └── rollback.yml        # Standalone/manual rollback
 ├── collections/
-│   ├── requirements.yml    # Third-party collections (containers.podman, etc.)
+│   ├── requirements.yml    # Third-party collections (containers.podman, ansible.eda, etc.)
 │   └── ansible_collections/demo/lightwell/   # Our own demo.lightwell collection
 │       ├── galaxy.yml
 │       └── roles/
-│           ├── build_app/    # Build & push the container image via Podman
-│           ├── deploy_app/   # Deploy the container via Podman + systemd
-│           ├── health_check/ # Poll /healthz with retries
-│           └── rollback/     # Restore the previous image
+│           ├── build_app/     # Build & push the container image via Podman
+│           ├── deploy_app/    # Deploy the container via Podman + systemd
+│           ├── health_check/  # Poll /healthz with retries
+│           ├── rollback/      # Restore the previous image
+│           └── report_status/ # Post commit status back to GitHub via a GitHub App token
+├── eda/
+│   ├── README.md           # How the rulebook routes GitHub events
+│   └── rulebooks/lightwell_webhook.yml   # Routes PR/push events to job templates
 ├── inventory/               # test/prod host groups and vars
 ├── renovate.json           # Renovate config targeting the Lightwell index
 ├── docs/aap-setup.md       # Full AAP configuration walkthrough
@@ -104,26 +114,35 @@ pytest
    (`packages.redhat.com/lightwell/python/remediated/simple`) as well as
    PyPI. When a new `.rhlw` patch is published for PyYAML or Jinja2, it
    opens a pull request bumping the pinned version.
-2. The PR's `pull_request` webhook fires against AAP's
-   **Lightwell - Build & Test** job template, which runs
+2. The PR's `pull_request` webhook lands on a single **EDA Event Stream**,
+   which forwards it to the `Lightwell Patch Pipeline Router` rulebook
+   activation ([`eda/rulebooks/lightwell_webhook.yml`](eda/rulebooks/lightwell_webhook.yml)).
+   The rulebook matches the `opened`/`synchronize`/`reopened` condition and
+   launches AAP's **Lightwell - Build & Test** job template, which runs
    [`playbooks/deploy_test.yml`](playbooks/deploy_test.yml): build the
    image from the PR branch, deploy it to `test` via Podman, and run a
    strict health check against `/healthz`.
-3. AAP posts the result back to the PR as a GitHub status check.
+3. The playbook's `demo.lightwell.report_status` role posts the result
+   back to the PR as a GitHub commit status, authenticating with a token
+   minted on demand from a GitHub App installation (via the
+   `GitHub App Installation Access Token Lookup` credential) -- no static
+   PAT is stored in AAP.
 4. Branch protection on `main` requires that check to pass and requires at
    least one approving review before the PR can merge.
-5. Merging to `main` fires a `push` webhook against AAP's
+5. Merging to `main` sends a `push` webhook to the same Event Stream; the
+   rulebook matches the `refs/heads/main` condition and launches AAP's
    **Lightwell - Deploy Prod** job template, which runs
    [`playbooks/deploy_prod.yml`](playbooks/deploy_prod.yml): deploy the
    same tested image to `prod` and health-check it again.
 6. If the prod health check fails, the playbook automatically invokes the
    `demo.lightwell.rollback` role, which restores the previously running image and
    re-verifies health -- no manual intervention required for the common
-   case.
+   case. Either way, `demo.lightwell.report_status` posts the final result
+   back to the commit.
 
 Full AAP resource setup (credentials, project, inventory, job templates,
-webhooks, branch protection) is documented step by step in
-[`docs/aap-setup.md`](docs/aap-setup.md).
+the GitHub App, Event Stream, and rulebook activation) is documented step
+by step in [`docs/aap-setup.md`](docs/aap-setup.md).
 
 ## Lightwell Network configuration
 
@@ -186,10 +205,13 @@ pre-commit run --all-files
 
 ## Prerequisites for a full live run
 
-- A GitHub repository with Actions/webhooks enabled and branch protection
+- A GitHub repository with webhooks enabled and branch protection
   configured on `main`.
-- An AAP (or AWX) instance reachable from GitHub -- see
-  [`docs/aap-setup.md`](docs/aap-setup.md).
+- A GitHub App installed on the repository (commit-status write access)
+  for AAP to authenticate as when posting status checks -- see
+  [`docs/aap-setup.md`](docs/aap-setup.md) section 1b.
+- An AAP instance (2.5+) with Event-Driven Ansible enabled and reachable
+  from GitHub -- see [`docs/aap-setup.md`](docs/aap-setup.md).
 - Two Podman-capable RHEL hosts (or host groups), one for `test` and one
   for `prod`.
 - A container registry both AAP and the target hosts can reach (default:

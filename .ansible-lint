@@ -5,21 +5,17 @@ exclude_paths:
   - .git/
   - .github/
   - app/
-  # Third-party collections installed locally by
-  # `ansible-galaxy collection install -r collections/requirements.yml`.
-  # These are gitignored and never committed; our own demo.lightwell
-  # collection (collections/ansible_collections/demo/) is linted normally.
+  # Ignore third-party collections installed by galaxy.
+  # Our own demo.lightwell collection is linted normally.
   - collections/ansible_collections/containers/
   - collections/ansible_collections/community/
   - collections/ansible_collections/ansible/
+  # eda/ uses rulebook syntax not understood by ansible-lint.
+  - eda/
 
 use_default_rules: true
 
-# no-role-prefix is intentionally skipped: build_app, deploy_app,
-# health_check, and rollback are designed to share a common variable
-# namespace (app_environment, app_container_name, app_image_tag, etc.) so
-# state -- like the image tag built by build_app -- flows naturally to the
-# roles that deploy, verify, and roll it back within the same play.
+# skip no-role-prefix: roles share a common variable namespace for pipeline state flow.
 skip_list:
   - var-naming[no-role-prefix]
 

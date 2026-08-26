@@ -1,0 +1,14 @@
+---
+description: Code should be self-documenting; only add comments for non-obvious logic or edge cases
+alwaysApply: true
+---
+
+# Comment Style
+
+Code should be self-documenting. Do not add comments that narrate what the
+code already expresses. Only add comments when:
+
+- The source content is not clear about its functionality
+- A bespoke implementation handles an edge case and the *why* needs explaining
+
+Keep comments brief.

@@ -1,0 +1,38 @@
+---
+- name: Route Lightwell GitHub events to the correct job template
+  hosts: all
+  sources:
+    - name: github_webhook
+      ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000
+
+  rules:
+    - name: Launch build & test on new or updated pull requests
+      condition: >-
+        event.payload.pull_request is defined and
+        event.payload.action in ["opened", "synchronize", "reopened"]
+      action:
+        run_job_template:
+          name: Lightwell - Build & Test
+          organization: Default
+          job_args:
+            extra_vars:
+              app_git_sha: "{{ event.payload.pull_request.head.sha }}"
+              github_repo_full_name: "{{ event.payload.repository.full_name }}"
+              github_pr_number: "{{ event.payload.pull_request.number }}"
+
+    - name: Launch production deploy on push to main
+      condition: >-
+        event.payload.ref is defined and
+        event.payload.ref == "refs/heads/main" and
+        event.payload.deleted | default(false) == false and
+        event.payload.after is defined
+      action:
+        run_job_template:
+          name: Lightwell - Deploy Prod
+          organization: Default
+          job_args:
+            extra_vars:
+              app_git_sha: "{{ event.payload.after }}"
+              github_repo_full_name: "{{ event.payload.repository.full_name }}"

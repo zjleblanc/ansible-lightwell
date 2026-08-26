@@ -1,8 +1,6 @@
-# Lightwell Patch Pipeline Demo -- application image
-#
-# Lightwell Network authentication is supplied at build time via a Podman
-# build secret named "netrc" (see docs/aap-setup.md). No credentials are
-# ever baked into image layers or committed to this repository.
+# Lightwell Demo application image.
+# Authenticates via "netrc" build secret (see docs/aap-setup.md).
+# No credentials are baked into layers.
 
 FROM registry.access.redhat.com/ubi9/python-312:latest AS builder
 

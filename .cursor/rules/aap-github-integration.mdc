@@ -1,0 +1,34 @@
+---
+description: GitHub-to-AAP integration must route through EDA, not direct webhooks or static tokens
+globs: playbooks/**,eda/**,docs/aap-setup.md,collections/ansible_collections/demo/lightwell/roles/report_status/**
+alwaysApply: false
+---
+
+# GitHub-to-AAP integration pattern
+
+This project intentionally routes GitHub automation through Event-Driven
+Ansible rather than AAP's native per-job-template webhooks, and never
+stores a static GitHub PAT. Preserve this pattern in any related change:
+
+- **Single entry point**: GitHub `pull_request`/`push` events must go to
+  one EDA Event Stream, which forwards to the Rulebook Activation running
+  `eda/rulebooks/lightwell_webhook.yml`. That rulebook decides which job
+  template to launch (`run_job_template`) and with which extra vars
+  (`app_git_sha`, `github_repo_full_name`, etc.). Do not configure a
+  webhook directly on an AAP job template.
+- **No static GitHub tokens**: Authenticate to GitHub's API using a token
+  minted on demand from a GitHub App installation via the
+  `GitHub App Installation Access Token Lookup` credential (chained into a
+  `GitHub Status Token`-type credential). Never add a plain GitHub PAT as
+  a credential or extra var.
+- **Status reporting is explicit**: Because job templates no longer have a
+  native webhook receiver, they must call the
+  `demo.lightwell.report_status` role in `pre_tasks`/`post_tasks` to post
+  `pending`/`success`/`failure` commit statuses back to GitHub. Keep this
+  role's variables (`github_token`, `github_repo_full_name`, `app_git_sha`,
+  `github_status_state`, `github_status_description`) intact and tolerant
+  of manual (non-EDA) launches by not failing when they're undefined.
+- **Keep `docs/aap-setup.md` in sync**: If you change the Event Stream,
+  GitHub App, rulebook conditions, or `report_status` role, update
+  `docs/aap-setup.md` (and the README's architecture diagram/pipeline
+  walkthrough) so the setup guide matches the actual wiring.

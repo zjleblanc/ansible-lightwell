@@ -1,13 +1,18 @@
 ---
-# Triggered by the AAP job template webhook on GitHub pull_request events.
-# Builds the application image from the PR branch and deploys it to the
-# test environment, then verifies it with a strict health check.
+# Routes GitHub events from EDA Event Stream to test build/deploy.
 - name: Build the Lightwell demo application image
   hosts: localhost
   connection: local
   gather_facts: true
   vars:
     app_environment: test
+  pre_tasks:
+    - name: Mark the GitHub status check as pending
+      ansible.builtin.include_role:
+        name: demo.lightwell.report_status
+      vars:
+        github_status_state: pending
+        github_status_description: "Building the application image and deploying to test"
   roles:
     - role: demo.lightwell.build_app
 
@@ -20,7 +25,16 @@
     - role: demo.lightwell.deploy_app
     - role: demo.lightwell.health_check
   post_tasks:
-    - name: Surface the outcome for AAP / webhook status reporting
+    - name: Report the final GitHub status check result
+      ansible.builtin.include_role:
+        name: demo.lightwell.report_status
+      vars:
+        github_status_state: "{{ 'success' if health_check_passed else 'failure' }}"
+        github_status_description: >-
+          {{ 'Test deployment healthy' if health_check_passed
+             else 'Test deployment failed its health check' }}
+
+    - name: Surface the outcome for AAP job output
       ansible.builtin.debug:
         msg: >-
           Test deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}

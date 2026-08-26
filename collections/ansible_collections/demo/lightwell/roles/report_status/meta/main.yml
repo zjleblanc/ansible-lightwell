@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  role_name: report_status
+  author: Lightwell Demo Team
+  description: >-
+    Posts pending/success/failure commit statuses back to GitHub using a
+    token minted from the Lightwell GitHub App installation, replacing the
+    status-posting normally provided by AAP's native job template webhook
+    receiver.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

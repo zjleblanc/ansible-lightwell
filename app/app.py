@@ -1,15 +1,4 @@
-"""Lightwell Patch Pipeline Demo -- Flask dashboard application.
-
-Demonstrates two libraries commonly patched through the Red Hat & IBM
-Lightwell Network:
-
-* PyYAML loads this app's configuration from ``config/app_config.yaml``.
-* Jinja2 (via Flask) renders the HTML dashboard you see in the browser.
-
-The dashboard surfaces the installed version of each tracked dependency and
-flags any that carry the Lightwell ``.rhlw-0000X`` remediated-patch suffix,
-so the effect of a Renovate-driven dependency bump is visible at a glance.
-"""
+"""Lightwell Patch Pipeline Demo Flask dashboard."""
 
 from __future__ import annotations
 
@@ -35,11 +24,7 @@ def load_config() -> dict[str, Any]:
 
 
 def get_package_versions() -> list[dict[str, Any]]:
-    """Report the installed version of each tracked dependency.
-
-    A version is considered "Lightwell Patched" when it carries the
-    ``.rhlw`` suffix applied by the Lightwell Remediated repository.
-    """
+    """Report installed versions of tracked dependencies."""
     versions = []
     for package_name in TRACKED_PACKAGES:
         try:
