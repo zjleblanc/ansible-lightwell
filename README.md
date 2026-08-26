@@ -143,6 +143,22 @@ and supplied to Renovate and AAP as secrets/credentials -- see
 [`renovate.json`](renovate.json)'s `hostRules` and
 [`docs/aap-setup.md`](docs/aap-setup.md) section 1a.
 
+### Where the Lightwell service account credentials must live
+
+The same username/token pair is needed in exactly three places, and
+nowhere else:
+
+| Location | Purpose | Never do this |
+| --- | --- | --- |
+| **AAP credential** of type `Lightwell Network` (custom credential type, [`docs/aap-setup.md`](docs/aap-setup.md) section 1a) | Injected into the `build_app` role run as `lightwell_username` / `lightwell_password` extra vars, written to a short-lived `.netrc` used only for the Podman build, then deleted. | Do not put these values in `group_vars`, role `defaults/`, or any extra-vars file checked into git. |
+| **GitHub repository secrets** `LIGHTWELL_USERNAME` and `LIGHTWELL_TOKEN` | Referenced by [`renovate.json`](renovate.json)'s `hostRules` (`{{ secrets.LIGHTWELL_USERNAME }}` / `{{ secrets.LIGHTWELL_TOKEN }}`) so Renovate can query the Lightwell Remediated index for new patches. | Do not paste the raw values into `renovate.json` or any onboarding config committed to the repo. |
+| **Local developer machine**, `~/.netrc`, only if running `pip install` against the Lightwell Remediated index outside of a container build | Lets `pip` on your workstation resolve `.rhlw` packages directly for local testing. | Do not commit your `~/.netrc`, and never copy it into the repo working directory (`.gitignore` already excludes any stray `.netrc`). |
+
+`.gitleaks.toml` includes custom rules that specifically detect the
+Lightwell username format (`<id>|<name>`), Lightwell JWT tokens, and
+`.netrc` credential blocks, so an accidental commit of any of the above is
+caught by the pre-commit hook before it ever reaches git history.
+
 ## Code quality: linting and pre-commit hooks
 
 This repo uses [pre-commit](https://pre-commit.com/) to enforce the same
