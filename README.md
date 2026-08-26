@@ -29,7 +29,8 @@ flowchart TD
     GitHubPR -->|"Webhook (pull_request event)"| EventStream["EDA Event Stream\n(GitHub Event Stream credential)"]
     EventStream --> Rulebook["Rulebook Activation\neda/rulebooks/lightwell_webhook.yml"]
     Rulebook -->|"run_job_template"| AAP_Test["AAP Job Template:\nLightwell - Build & Test"]
-    AAP_Test --> BuildImg["Build Container Image\n(Podman)"]
+    AAP_Test --> UnifiedDeploy["Unified Playbook:\nplaybooks/deploy.yml"]
+    UnifiedDeploy --> BuildImg["Build Container Image\n(Podman)"]
     BuildImg --> DeployTest["Deploy to Test\n(Podman on RHEL)"]
     DeployTest --> HealthTest["Health Check\n(Test Environment)"]
     HealthTest -->|"Pass"| ApprovePR["report_status role posts to PR:\nChecks Pass (GitHub App token)"]
@@ -37,7 +38,8 @@ flowchart TD
     ApprovePR -->|"Reviewer approves & merges"| MergeMain["Merge to main"]
     MergeMain -->|"Webhook (push event)"| EventStream
     Rulebook -->|"run_job_template"| AAP_Prod["AAP Job Template:\nLightwell - Deploy Prod"]
-    AAP_Prod --> DeployProd["Deploy to Prod\n(Podman on RHEL)"]
+    AAP_Prod --> UnifiedDeploy
+    UnifiedDeploy --> DeployProd["Deploy to Prod\n(Podman on RHEL)"]
     DeployProd --> HealthProd["Health Check\n(Prod Environment)"]
     HealthProd -->|"Pass"| Done["Deployment Complete"]
     HealthProd -->|"Fail"| Rollback["Automatic Rollback to\nPrevious Version"]
@@ -56,8 +58,7 @@ ansible-lightwell/
 │   ├── tests/              # pytest suite
 │   └── Containerfile
 ├── playbooks/
-│   ├── deploy_test.yml     # Build + deploy to test (launched via EDA on PR events)
-│   ├── deploy_prod.yml     # Deploy to prod + health check + rollback (launched via EDA on push to main)
+│   ├── deploy.yml          # Unified build & deploy (build on test, rollback on prod)
 │   └── rollback.yml        # Standalone/manual rollback
 ├── collections/
 │   ├── requirements.yml    # Third-party collections (containers.podman, ansible.eda, etc.)
@@ -119,9 +120,9 @@ pytest
    activation ([`eda/rulebooks/lightwell_webhook.yml`](eda/rulebooks/lightwell_webhook.yml)).
    The rulebook matches the `opened`/`synchronize`/`reopened` condition and
    launches AAP's **Lightwell - Build & Test** job template, which runs
-   [`playbooks/deploy_test.yml`](playbooks/deploy_test.yml): build the
-   image from the PR branch, deploy it to `test` via Podman, and run a
-   strict health check against `/healthz`.
+   [`playbooks/deploy.yml`](playbooks/deploy.yml) with `app_environment: test`:
+   build the image from the PR branch, deploy it to `test` via Podman, and run
+   a strict health check against `/healthz`.
 3. The playbook's `demo.lightwell.report_status` role posts the result
    back to the PR as a GitHub commit status, authenticating with a token
    minted on demand from a GitHub App installation (via the
@@ -132,8 +133,8 @@ pytest
 5. Merging to `main` sends a `push` webhook to the same Event Stream; the
    rulebook matches the `refs/heads/main` condition and launches AAP's
    **Lightwell - Deploy Prod** job template, which runs
-   [`playbooks/deploy_prod.yml`](playbooks/deploy_prod.yml): deploy the
-   same tested image to `prod` and health-check it again.
+   [`playbooks/deploy.yml`](playbooks/deploy.yml) with `app_environment: prod`:
+   deploy the same tested image to `prod` and health-check it again.
 6. If the prod health check fails, the playbook automatically invokes the
    `demo.lightwell.rollback` role, which restores the previously running image and
    re-verifies health -- no manual intervention required for the common

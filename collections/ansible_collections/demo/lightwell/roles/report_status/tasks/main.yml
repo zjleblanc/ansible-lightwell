@@ -2,6 +2,12 @@
 # Reports commit status to GitHub via GitHub App token lookup.
 # Required because EDA routes events externally from the job template.
 - name: Report commit status to GitHub
+  when:
+    - github_token is defined
+    - github_repo_full_name is defined
+    - app_git_sha is defined
+  register: github_status_result
+  failed_when: false
   ansible.builtin.uri:
     url: "{{ github_api_url }}/repos/{{ github_repo_full_name }}/statuses/{{ app_git_sha }}"
     method: POST
@@ -14,20 +20,14 @@
       context: "{{ github_status_context }}"
       description: "{{ github_status_description }}"
     status_code: [201]
-  register: github_status_result
-  failed_when: false
-  when:
-    - github_token is defined
-    - github_repo_full_name is defined
-    - app_git_sha is defined
 
 - name: Warn when the GitHub status could not be reported
-  ansible.builtin.debug:
-    msg: >-
-      Skipped GitHub status for {{ github_repo_full_name | default('unknown') }}@{{ app_git_sha | default('unknown') }}.
-      Likely a manual launch without EDA-supplied credentials.
   when: >-
     github_token is not defined or
     github_repo_full_name is not defined or
     app_git_sha is not defined or
     (github_status_result is defined and github_status_result.failed | default(false))
+  ansible.builtin.debug:
+    msg: >-
+      Skipped GitHub status for {{ github_repo_full_name | default('unknown') }}@{{ app_git_sha | default('unknown') }}.
+      Likely a manual launch without EDA-supplied credentials.

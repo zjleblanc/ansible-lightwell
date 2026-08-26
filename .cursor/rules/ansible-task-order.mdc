@@ -1,0 +1,42 @@
+---
+description: Enforce Ansible task key ordering (name, when, others, module)
+globs: **/*.yml
+alwaysApply: false
+---
+
+# Ansible Task Ordering
+
+All Ansible task blocks must follow a consistent key order for readability and predictability.
+
+## Ordering Standard
+
+1. `name`: Descriptive name of the task.
+2. `when`: Conditional logic for execution.
+3. Other keys: `vars`, `register`, `become`, `failed_when`, `until`, `retries`, `delay`, `loop`, `no_log`, etc.
+4. Module call: The actual Ansible module being invoked (e.g., `ansible.builtin.uri`, `containers.podman.podman_container`).
+
+## Examples
+
+### Correct Task Order
+
+```yaml
+- name: Report commit status to GitHub
+  when:
+    - github_token is defined
+    - github_repo_full_name is defined
+  register: github_status_result
+  failed_when: false
+  ansible.builtin.uri:
+    url: "https://api.github.com/..."
+    method: POST
+```
+
+### Incorrect Task Order
+
+```yaml
+- name: Report commit status to GitHub
+  ansible.builtin.uri:
+    url: "https://api.github.com/..."
+  when: github_token is defined
+  register: github_status_result
+```

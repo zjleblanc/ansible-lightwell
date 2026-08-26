@@ -21,10 +21,9 @@ flowchart LR
     ES --> RA["Rulebook Activation\neda/rulebooks/lightwell_webhook.yml"]
     RA -->|"run_job_template"| JT1["Job Template:\nLightwell - Build & Test"]
     RA -->|"run_job_template"| JT2["Job Template:\nLightwell - Deploy Prod"]
-    JT1 --> PB1["playbooks/deploy_test.yml"]
-    JT2 --> PB2["playbooks/deploy_prod.yml"]
-    PB1 -->|"github_token"| GH
-    PB2 -->|"github_token"| GH
+    JT1 --> PB["playbooks/deploy.yml"]
+    JT2 --> PB
+    PB -->|"github_token"| GH
     JT3["Job Template:\nLightwell - Rollback\n(manual)"] --> PB3["playbooks/rollback.yml"]
 ```
 
@@ -200,11 +199,11 @@ so **no webhook configuration is needed on the job templates themselves**.
 | --- | --- |
 | Inventory | `lightwell-demo` |
 | Project | `ansible-lightwell` |
-| Playbook | `playbooks/deploy_test.yml` |
+| Playbook | `playbooks/deploy.yml` |
 | Credentials | Lightwell Demo Service Account, Machine, Lightwell GitHub Status Reporter |
 | Limit | `test` |
 | Source Control Branch/Tag/Commit override | Prompt on launch (so PR builds check out the PR head SHA) |
-| Extra Variables | Prompt on launch (the rulebook supplies `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
+| Extra Variables | Prompt on launch (the rulebook supplies `app_environment: test`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
 ### 4b. Lightwell - Deploy Prod
 
@@ -212,10 +211,10 @@ so **no webhook configuration is needed on the job templates themselves**.
 | --- | --- |
 | Inventory | `lightwell-demo` |
 | Project | `ansible-lightwell` |
-| Playbook | `playbooks/deploy_prod.yml` |
+| Playbook | `playbooks/deploy.yml` |
 | Credentials | Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
 | Limit | `prod` |
-| Extra Variables | Prompt on launch (the rulebook supplies `app_git_sha`, `github_repo_full_name`) |
+| Extra Variables | Prompt on launch (the rulebook supplies `app_environment: prod`, `app_git_sha`, `github_repo_full_name`) |
 
 ### 4c. Lightwell - Rollback (manual)
 

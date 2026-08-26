@@ -18,6 +18,7 @@
           organization: Default
           job_args:
             extra_vars:
+              app_environment: test
               app_git_sha: "{{ event.payload.pull_request.head.sha }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
               github_pr_number: "{{ event.payload.pull_request.number }}"
@@ -34,5 +35,6 @@
           organization: Default
           job_args:
             extra_vars:
+              app_environment: prod
               app_git_sha: "{{ event.payload.after }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"

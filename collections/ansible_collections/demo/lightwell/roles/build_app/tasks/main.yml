@@ -1,24 +1,25 @@
 ---
 - name: Ensure application source directory exists on the build host
+  register: app_source_stat
   ansible.builtin.stat:
     path: "{{ app_source_dir }}"
-  register: app_source_stat
 
 - name: Fail if application source is missing
+  when: not app_source_stat.stat.exists
   ansible.builtin.fail:
     msg: >-
       Application source not found at {{ app_source_dir }}. This role
       expects to run against a checkout of the ansible-lightwell repository
       (e.g. the AAP project working directory).
-  when: not app_source_stat.stat.exists
 
 - name: Create a secure temporary netrc file for Lightwell authentication
+  register: lightwell_netrc_file
   ansible.builtin.tempfile:
     state: file
     suffix: netrc
-  register: lightwell_netrc_file
 
 - name: Write Lightwell Network credentials to the temporary netrc file
+  no_log: true
   ansible.builtin.copy:
     dest: "{{ lightwell_netrc_file.path }}"
     content: |
@@ -26,9 +27,9 @@
       login {{ lightwell_username }}
       password {{ lightwell_password }}
     mode: "0600"
-  no_log: true
 
 - name: Build the application container image
+  register: build_result
   containers.podman.podman_image:
     name: "{{ app_image_registry }}/{{ app_image_name }}"
     tag: "{{ app_image_tag }}"
@@ -37,26 +38,25 @@
       file: Containerfile
       force_rm: true
       extra_args: "--secret id=netrc,src={{ lightwell_netrc_file.path }}"
-  register: build_result
 
 - name: Remove the temporary netrc file
+  no_log: true
   ansible.builtin.file:
     path: "{{ lightwell_netrc_file.path }}"
     state: absent
-  no_log: true
 
 - name: Tag the image for the target environment
+  changed_when: true
   ansible.builtin.command:
     cmd: >-
       podman tag {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}
       {{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest
-  changed_when: true
 
 - name: Push the built image(s) to the registry
-  ansible.builtin.command:
-    cmd: "podman push {{ app_image_registry }}/{{ app_image_name }}:{{ item }}"
+  when: app_image_push | bool
   loop:
     - "{{ app_image_tag }}"
     - "{{ app_environment }}-latest"
   changed_when: true
-  when: app_image_push | bool
+  ansible.builtin.command:
+    cmd: "podman push {{ app_image_registry }}/{{ app_image_name }}:{{ item }}"
