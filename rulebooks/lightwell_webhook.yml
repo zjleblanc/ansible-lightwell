@@ -15,7 +15,7 @@
         event.payload.action in ["opened", "synchronize", "reopened"]
       action:
         run_job_template:
-          name: Lightwell - Build & Test
+          name: Lightwell // Build & Test
           organization: Default
           job_args:
             extra_vars:
@@ -24,7 +24,7 @@
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
               github_pr_number: "{{ event.payload.pull_request.number }}"
 
-    - name: Launch production deploy on push to main
+    - name: Lightwell // Deploy Prod
       condition: >-
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
