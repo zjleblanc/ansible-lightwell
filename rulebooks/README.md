@@ -27,7 +27,7 @@ pip install ansible-rulebook
 ansible-galaxy collection install ansible.eda
 
 ansible-rulebook \
-  --rulebook eda/rulebooks/lightwell_webhook.yml \
+  --rulebook rulebooks/lightwell_webhook.yml \
   --inventory inventory/hosts.yml
 ```
 

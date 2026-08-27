@@ -27,7 +27,7 @@ flowchart TD
     RenovateBot["Renovate Bot"] -->|"Scans app/requirements.txt against\nLightwell Remediated index"| DetectPatch["Detects new .rhlw patch\n(e.g. PyYAML 6.0.2.rhlw-00001)"]
     DetectPatch -->|"Creates PR"| GitHubPR["GitHub Pull Request"]
     GitHubPR -->|"Webhook (pull_request event)"| EventStream["EDA Event Stream\n(GitHub Event Stream credential)"]
-    EventStream --> Rulebook["Rulebook Activation\neda/rulebooks/lightwell_webhook.yml"]
+    EventStream --> Rulebook["Rulebook Activation\nrulebooks/lightwell_webhook.yml"]
     Rulebook -->|"run_job_template"| AAP_Test["AAP Job Template:\nLightwell - Build & Test"]
     AAP_Test --> UnifiedDeploy["Unified Playbook:\nplaybooks/deploy.yml"]
     UnifiedDeploy --> BuildImg["Build Container Image\n(Podman)"]
@@ -117,7 +117,7 @@ pytest
    opens a pull request bumping the pinned version.
 2. The PR's `pull_request` webhook lands on a single **EDA Event Stream**,
    which forwards it to the `Lightwell Patch Pipeline Router` rulebook
-   activation ([`eda/rulebooks/lightwell_webhook.yml`](eda/rulebooks/lightwell_webhook.yml)).
+   activation ([`rulebooks/lightwell_webhook.yml`](rulebooks/lightwell_webhook.yml)).
    The rulebook matches the `opened`/`synchronize`/`reopened` condition and
    launches AAP's **Lightwell - Build & Test** job template, which runs
    [`playbooks/deploy.yml`](playbooks/deploy.yml) with `app_environment: test`:

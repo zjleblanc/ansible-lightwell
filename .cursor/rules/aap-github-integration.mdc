@@ -1,6 +1,6 @@
 ---
 description: GitHub-to-AAP integration must route through EDA, not direct webhooks or static tokens
-globs: playbooks/**,eda/**,docs/aap-setup.md,collections/ansible_collections/demo/lightwell/roles/report_status/**
+globs: playbooks/**,rulebooks/**,docs/aap-setup.md,collections/ansible_collections/demo/lightwell/roles/report_status/**
 alwaysApply: false
 ---
 
@@ -12,7 +12,7 @@ stores a static GitHub PAT. Preserve this pattern in any related change:
 
 - **Single entry point**: GitHub `pull_request`/`push` events must go to
   one EDA Event Stream, which forwards to the Rulebook Activation running
-  `eda/rulebooks/lightwell_webhook.yml`. That rulebook decides which job
+  `rulebooks/lightwell_webhook.yml`. That rulebook decides which job
   template to launch (`run_job_template`) and with which extra vars
   (`app_git_sha`, `github_repo_full_name`, etc.). Do not configure a
   webhook directly on an AAP job template.

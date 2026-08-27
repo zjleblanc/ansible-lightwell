@@ -4,7 +4,7 @@
 
 ### Added
 
-- Event-Driven Ansible (EDA) rulebook (`eda/rulebooks/lightwell_webhook.yml`) to route GitHub `pull_request` and `push` events to the appropriate job templates.
+- Event-Driven Ansible (EDA) rulebook (`rulebooks/lightwell_webhook.yml`) to route GitHub `pull_request` and `push` events to the appropriate job templates.
 - Local Ansible collection role `demo.lightwell.report_status` to post `pending`, `success`, and `failure` commit statuses back to GitHub using a GitHub App installation token.
 - Cursor rules in `.cursor/rules/` for persisting AAP integration patterns and comment style standards.
 - Documentation in `docs/aap-setup.md` for simplified event routing using HMAC and the GitHub App installation token lookup credential.

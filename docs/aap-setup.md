@@ -18,7 +18,7 @@ GitHub PAT is stored anywhere in this pipeline.
 ```mermaid
 flowchart LR
     GH["GitHub repo\nansible-lightwell"] -->|"pull_request / push webhook"| ES["EDA Event Stream\n(GitHub Event Stream credential)"]
-    ES --> RA["Rulebook Activation\neda/rulebooks/lightwell_webhook.yml"]
+    ES --> RA["Rulebook Activation\nrulebooks/lightwell_webhook.yml"]
     RA -->|"run_job_template"| JT1["Job Template:\nLightwell - Build & Test"]
     RA -->|"run_job_template"| JT2["Job Template:\nLightwell - Deploy Prod"]
     JT1 --> PB["playbooks/deploy.yml"]
@@ -179,7 +179,7 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
 - Update Revision on Launch: enabled
 
 This same project (and checkout) also supplies the rulebook at
-`eda/rulebooks/lightwell_webhook.yml` -- create a matching **EDA Project**
+`rulebooks/lightwell_webhook.yml` -- create a matching **EDA Project**
 under **Automation Decisions -> Projects** pointing at the same
 repository URL so the rulebook is available to Rulebook Activations.
 
@@ -288,7 +288,7 @@ the GitHub webhook in step 6d. See [Red Hat docs -- Creating an event stream][rh
 
 - Name: `Lightwell Patch Pipeline Router`
 - Project: the EDA project from step 2
-- Rulebook: `eda/rulebooks/lightwell_webhook.yml`
+- Rulebook: `rulebooks/lightwell_webhook.yml`
 - Event streams: click the gear icon to open the source-mapping UI and map
   the rulebook's `github_webhook` source to `lightwell-github-events`.
   This replaces the rulebook's `ansible.eda.webhook` source with
