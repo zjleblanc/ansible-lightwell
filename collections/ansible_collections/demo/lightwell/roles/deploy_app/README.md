@@ -18,7 +18,7 @@ Before deploying, it records the currently running image reference to
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `app_container_name` | `lightwell-patch-demo` | Name of the running container. |
+| `app_container_name` | `lightwell-patch-demo-app` | Name of the running container. |
 | `app_host_port` | `8080` | Host port mapped to the container's port 8080. |
 | `app_previous_image_file` | `/opt/lightwell-demo/previous_image.txt` | Where the previous image reference is persisted for rollback. |
 | `manage_systemd_unit` | `true` | Whether to generate and enable a systemd unit for the container. |

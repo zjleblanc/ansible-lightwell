@@ -11,8 +11,8 @@ app_source_dir: "{{ playbook_dir }}/../app"
 lightwell_registry_host: packages.redhat.com
 
 # Container image coordinates.
-app_image_registry: quay.io/lightwell-demo
-app_image_name: lightwell-patch-demo
+app_image_registry: quay.io/zleblanc
+app_image_name: lightwell-patch-demo-app
 app_image_tag: "{{ app_git_sha | default('dev') }}"
 app_image_push: true
 app_environment: test

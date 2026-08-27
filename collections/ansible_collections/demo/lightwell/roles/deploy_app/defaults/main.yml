@@ -1,5 +1,5 @@
 ---
-app_container_name: lightwell-patch-demo
+app_container_name: lightwell-patch-demo-app
 app_host_port: 8080
 app_previous_image_file: /opt/lightwell-demo/previous_image.txt
 systemd_unit_dir: /etc/systemd/system

@@ -16,7 +16,7 @@ known.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `app_container_name` | `lightwell-patch-demo` | Name of the container to roll back. |
+| `app_container_name` | `lightwell-patch-demo-app` | Name of the container to roll back. |
 | `app_host_port` | `8080` | Host port mapped to the container's port 8080. |
 | `app_previous_image_file` | `/opt/lightwell-demo/previous_image.txt` | Path written by `deploy_app` containing the last known-good image reference. |
 

@@ -44,4 +44,4 @@
       condition: true
       action:
         debug:
-          msg: "{{ event.payload | to_nice_json }}"
+          var: event.payload
