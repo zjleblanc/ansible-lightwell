@@ -104,7 +104,7 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
    - RSA Private Key: contents of the `.pem` file
    - Name it `Lightwell GitHub App Lookup`.
 
-3. **Create a custom credential type** to carry the resolved token into a
+   3. **Create a custom credential type** to carry the resolved token into a
    job as an extra var (Automation Execution -> Infrastructure ->
    Credential Types -> Add):
    - Name: `GitHub Status Token`
@@ -130,10 +130,16 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
 4. **Create the target credential** of the `GitHub Status Token` type
    named `Lightwell GitHub Status Reporter`. On its `GitHub Token` field,
    click the external-credential (key) icon and link it to
-   `Lightwell GitHub App Lookup` from step 2, with username
-   `x-access-token`. AAP now resolves a fresh installation token from the
-   GitHub App every time this credential is used, instead of storing a
-   static secret.
+   `Lightwell GitHub App Lookup` from step 2.
+
+   In the "Select external credential" dialog:
+   - **Credential**: Select `Lightwell GitHub App Lookup`.
+   - **Metadata**: Leave the **Description (Optional)** field empty (or add
+     a label).
+   - Click **Finish**.
+
+   AAP now resolves a fresh installation token from the GitHub App every
+   time this credential is used, instead of storing a static secret.
 
    Attach `Lightwell GitHub Status Reporter` to both the
    `Lightwell - Build & Test` and `Lightwell - Deploy Prod` job templates
