@@ -27,7 +27,7 @@
       condition: >-
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
-        event.payload.deleted | default(false) == false and
+        (event.payload.deleted is not defined or event.payload.deleted == false) and
         event.payload.after is defined
       action:
         run_job_template:
