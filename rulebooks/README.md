@@ -9,8 +9,27 @@ payload and launches the correct job template:
 
 | Event | Condition | Launches |
 | --- | --- | --- |
-| `pull_request` (opened/synchronize/reopened) | `event.payload.pull_request` is present | `Lightwell - Build & Test` |
-| `push` to `refs/heads/main` | `event.payload.ref == "refs/heads/main"` and not a branch deletion | `Lightwell - Deploy Prod` |
+| `pull_request` (opened/synchronize/reopened) | PR is present **and** `app/` files changed | `Lightwell - Build & Test` |
+| `push` to `refs/heads/main` | ref is main, not a deletion, **and** `app/` files changed | `Lightwell - Deploy Prod` |
+
+### Path filtering
+
+The `demo.lightwell.path_filter` event filter plugin inspects each event
+before rules are evaluated. For push events, it scans
+`commits[].added/modified/removed` for file paths matching the configured
+prefixes (currently `app/`). Pull-request payloads don't carry file lists,
+so the filter defaults to `true` — letting the event through unconditionally.
+
+If you need to watch additional directories, add them to the `paths` list
+in the source's `filters` block:
+
+```yaml
+filters:
+  - demo.lightwell.path_filter:
+      paths:
+        - "app/"
+        - "collections/"
+```
 
 Full setup instructions (creating the Event Stream, its HMAC credential,
 the Decision Environment, the EDA project, and the Rulebook Activation

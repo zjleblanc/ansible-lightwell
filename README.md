@@ -108,6 +108,45 @@ cd app
 pytest
 ```
 
+## Path-based filtering: only deploy when `app/` changes
+
+Not every commit or PR needs a build. A change to `README.md` or
+`renovate.json` shouldn't burn CI minutes building and deploying the
+application. The pipeline filters events at two levels:
+
+### Push events (production deploys)
+
+The EDA rulebook uses the `demo.lightwell.path_filter` event filter plugin.
+GitHub push payloads include per-commit file lists (`commits[].added`,
+`modified`, `removed`), so the filter checks those at the EDA layer --
+before a job template is ever launched. If no file in `app/` was touched,
+`event.has_path_changes` is set to `false` and the rule condition rejects
+the event.
+
+### Pull-request events (test builds)
+
+GitHub `pull_request` webhook payloads **do not** include a list of changed
+files (only an integer count). That means the EDA filter cannot inspect
+paths, and it defaults to allowing the event through. Instead, the playbook
+itself performs the check: the first task block in
+[`playbooks/deploy.yml`](playbooks/deploy.yml) calls the GitHub
+[Pull Request Files API](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files)
+to get the changed file list, and ends the play early (posting a "Skipped"
+success status back to the PR) when nothing in `app/` was modified.
+
+### Alternatives considered
+
+| Approach | Pros | Cons |
+| --- | --- | --- |
+| **EDA event filter only** (current push approach) | Cheapest: no AAP job is launched at all. | Doesn't work for PR events -- the payload lacks file paths. |
+| **GitHub Actions `paths:` filter → `repository_dispatch`** | GitHub-native path filtering; bullet-proof. | Adds a second trigger layer and couples the pipeline to Actions. |
+| **HTTP call inside the EDA filter plugin** | Keeps the logic in one place (EDA). | Adds network I/O + token management to the event-processing hot path; harder to debug. |
+| **Early `meta: end_play` in the job template** (current PR approach) | Works regardless of payload content; can post an explanatory status back to the PR. | A job is still launched (albeit short-lived); the GitHub API call adds ~1 s. |
+
+The chosen hybrid keeps push filtering at the cheapest possible layer (EDA,
+no job launched) and handles PR filtering at the next cheapest layer (early
+playbook exit with a clear status posted).
+
 ## The patch pipeline, end to end
 
 1. **Renovate** (configured in [`renovate.json`](renovate.json)) scans

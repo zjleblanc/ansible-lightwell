@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-27 — Implement path-based filtering for GitHub events
+
+### Added
+
+- EDA event filter plugin `demo.lightwell.path_filter` to flag events containing changes in specified paths.
+- Early path-check logic in `playbooks/deploy.yml` to query the GitHub PR files API and skip builds for non-app changes.
+
+### Changed
+
+- `rulebooks/lightwell_webhook.yml` now filters `pull_request` and `push` events to only trigger when files in `app/` are modified.
+- `README.md` and `rulebooks/README.md` updated to document the hybrid filtering strategy and alternatives considered.
+
+### Fixed
+
+- Rulebook condition syntax to use `is defined` / `is not defined` instead of unsupported Jinja filters.
+
 ## 2026-08-26 — Add Event-Driven Ansible integration and status reporting
 
 ### Added

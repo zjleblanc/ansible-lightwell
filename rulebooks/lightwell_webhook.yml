@@ -6,12 +6,17 @@
       ansible.eda.webhook:
         host: 0.0.0.0
         port: 5000
+      filters:
+        - demo.lightwell.path_filter:
+            paths:
+              - "app/"
 
   rules:
     - name: Launch build & test on new or updated pull requests
       condition: >-
         event.payload.pull_request is defined and
-        event.payload.action in ["opened", "synchronize", "reopened"]
+        event.payload.action in ["opened", "synchronize", "reopened"] and
+        event.has_path_changes == true
       action:
         run_job_template:
           name: Lightwell - Build & Test
@@ -28,7 +33,8 @@
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
         (event.payload.deleted is not defined or event.payload.deleted == false) and
-        event.payload.after is defined
+        event.payload.after is defined and
+        event.has_path_changes == true
       action:
         run_job_template:
           name: Lightwell - Deploy Prod

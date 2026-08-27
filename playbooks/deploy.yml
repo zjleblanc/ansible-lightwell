@@ -4,6 +4,36 @@
   connection: local
   gather_facts: false
   tasks:
+    - name: Check whether the PR touches app/ files (Test only)
+      when:
+        - app_environment == 'test'
+        - github_token is defined
+        - github_repo_full_name is defined
+        - github_pr_number is defined
+      block:
+        - name: Fetch the list of files changed in the pull request
+          register: pr_files_result
+          ansible.builtin.uri:
+            url: "{{ github_api_url | default('https://api.github.com') }}/repos/{{ github_repo_full_name }}/pulls/{{ github_pr_number }}/files?per_page=100"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ github_token }}"
+              Accept: application/vnd.github+json
+            status_code: [200]
+
+        - name: End play early when no app/ files were changed
+          when: pr_files_result.json | map(attribute='filename') | select('match', '^app/') | list | length == 0
+          vars:
+            github_status_state: success
+            github_status_description: "Skipped — no app/ changes detected"
+          block:
+            - name: Post a success status so the PR check is not left pending
+              ansible.builtin.include_role:
+                name: demo.lightwell.report_status
+
+            - name: End play
+              ansible.builtin.meta: end_play
+
     - name: Mark the GitHub status check as pending (Test only)
       when: app_environment == 'test'
       vars:
