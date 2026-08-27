@@ -15,6 +15,8 @@
 ### Fixed
 
 - Rulebook condition syntax to use `is defined` / `is not defined` instead of unsupported Jinja filters.
+- Corrected collection path for EDA event filter plugin to `extensions/eda/plugins/event_filter/` to ensure discovery by `ansible-rulebook`.
+- Moved `ansible_collections` to the repository root for better discovery by AAP EDA activations.
 
 ## 2026-08-26 — Add Event-Driven Ansible integration and status reporting
 
