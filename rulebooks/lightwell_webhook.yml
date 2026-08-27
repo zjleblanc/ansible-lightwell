@@ -1,6 +1,7 @@
 ---
 - name: Route Lightwell GitHub events to the correct job template
   hosts: all
+
   sources:
     - name: github_webhook
       ansible.eda.webhook:
