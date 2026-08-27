@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-08-27 — Add ansible.cfg for local collection resolution
+
+### Added
+
+- `ansible.cfg` setting `collections_path` to `./collections:~/.ansible/collections:/usr/share/ansible/collections`
+  so `demo.lightwell.*` roles/plugins resolve for local tooling
+  (`ansible-lint`, `ansible-playbook`, `ansible-rulebook`). The two default
+  entries are kept alongside the local path (rather than replaced) so this
+  file doesn't shadow whatever collections an AAP Execution/Decision
+  Environment bakes in when it mounts the project directory and picks up
+  this same `ansible.cfg`.
+
+## 2026-08-27 — Move path filtering into the deploy playbook
+
+### Changed
+
+- Path filtering for both push (prod) and pull-request (test) events now
+  happens entirely in `playbooks/deploy.yml` via GitHub API calls (Commits
+  API for pushes, Pull Request Files API for PRs), each ending the play
+  early when no `app/` files changed.
+- `rulebooks/lightwell_webhook.yml` no longer filters events by path; it
+  launches a job template for every matching `pull_request`/`push` event
+  and lets the playbook decide whether to build/deploy.
+- `README.md` and `rulebooks/README.md` updated to document the decision
+  and drop the "hybrid filtering" alternatives table entry for the EDA
+  filter plugin.
+
+### Removed
+
+- EDA event filter plugin `demo.lightwell.path_filter`. Decision
+  Environments don't mount local collections, so the plugin was never
+  actually available to a Rulebook Activation outside of local
+  `ansible-rulebook` testing.
+
 ## 2026-08-27 — Implement path-based filtering for GitHub events
 
 ### Added

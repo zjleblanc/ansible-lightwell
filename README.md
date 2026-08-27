@@ -112,40 +112,50 @@ pytest
 
 Not every commit or PR needs a build. A change to `README.md` or
 `renovate.json` shouldn't burn CI minutes building and deploying the
-application. The pipeline filters events at two levels:
+application. Both the push (prod) and pull-request (test) code paths are
+filtered the same way, entirely inside [`playbooks/deploy.yml`](playbooks/deploy.yml):
 
 ### Push events (production deploys)
 
-The EDA rulebook uses the `demo.lightwell.path_filter` event filter plugin.
-GitHub push payloads include per-commit file lists (`commits[].added`,
-`modified`, `removed`), so the filter checks those at the EDA layer --
-before a job template is ever launched. If no file in `app/` was touched,
-`event.has_path_changes` is set to `false` and the rule condition rejects
-the event.
+The first `pre_task` block in the deploy play calls the GitHub
+[Commits API](https://docs.github.com/en/rest/commits/commits#get-a-commit)
+for `app_git_sha` (the pushed commit) to get its list of changed files, and
+ends the play early -- posting a "Skipped" success status back to the
+commit -- when nothing in `app/` was modified.
 
 ### Pull-request events (test builds)
 
-GitHub `pull_request` webhook payloads **do not** include a list of changed
-files (only an integer count). That means the EDA filter cannot inspect
-paths, and it defaults to allowing the event through. Instead, the playbook
-itself performs the check: the first task block in
-[`playbooks/deploy.yml`](playbooks/deploy.yml) calls the GitHub
+GitHub `pull_request` webhook payloads don't include a list of changed
+files (only an integer count), so this can't be checked from the event
+payload alone. The first task block in the build play calls the GitHub
 [Pull Request Files API](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files)
 to get the changed file list, and ends the play early (posting a "Skipped"
 success status back to the PR) when nothing in `app/` was modified.
+
+### Why filtering lives in the playbook, not the EDA rulebook
+
+An earlier version filtered push events at the EDA layer with a custom
+`demo.lightwell.path_filter` event filter plugin, so unwanted pushes never
+launched an AAP job at all. That plugin lived in this project's own
+collection -- but Decision Environments don't mount local collections, so
+it was never actually available to the Rulebook Activation in a real AAP
+deployment, only in local `ansible-rulebook` testing. It's been removed,
+and [`rulebooks/lightwell_webhook.yml`](rulebooks/lightwell_webhook.yml)
+no longer filters by path at all; every matching `pull_request`/`push`
+event launches a job template, and that job template's playbook decides
+whether to actually build/deploy.
 
 ### Alternatives considered
 
 | Approach | Pros | Cons |
 | --- | --- | --- |
-| **EDA event filter only** (current push approach) | Cheapest: no AAP job is launched at all. | Doesn't work for PR events -- the payload lacks file paths. |
+| **EDA event filter plugin** (previous push approach) | Cheapest: no AAP job is launched at all. | Requires a custom collection plugin, which Decision Environments don't mount in practice; doesn't work for PR events either, since the payload lacks file paths. |
 | **GitHub Actions `paths:` filter → `repository_dispatch`** | GitHub-native path filtering; bullet-proof. | Adds a second trigger layer and couples the pipeline to Actions. |
-| **HTTP call inside the EDA filter plugin** | Keeps the logic in one place (EDA). | Adds network I/O + token management to the event-processing hot path; harder to debug. |
-| **Early `meta: end_play` in the job template** (current PR approach) | Works regardless of payload content; can post an explanatory status back to the PR. | A job is still launched (albeit short-lived); the GitHub API call adds ~1 s. |
+| **Early `meta: end_play` in the playbook** (current approach, both cases) | Works regardless of payload content; needs no plugin support from the Decision Environment; can post an explanatory status back to GitHub. | A job is still launched (albeit short-lived); the GitHub API call adds ~1 s. |
 
-The chosen hybrid keeps push filtering at the cheapest possible layer (EDA,
-no job launched) and handles PR filtering at the next cheapest layer (early
-playbook exit with a clear status posted).
+The chosen approach trades a small amount of AAP job overhead for a
+filtering mechanism that only depends on the playbook's own GitHub API
+calls -- no reliance on plugins the Decision Environment may not have.
 
 ## The patch pipeline, end to end
 

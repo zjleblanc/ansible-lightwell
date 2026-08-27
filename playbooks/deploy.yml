@@ -51,6 +51,36 @@
   hosts: "{{ app_environment | default(omit) }}"
   gather_facts: false
   pre_tasks:
+    - name: Check whether the push commit touches app/ files (Prod only)
+      when:
+        - app_environment == 'prod'
+        - github_token is defined
+        - github_repo_full_name is defined
+        - app_git_sha is defined
+      block:
+        - name: Fetch the list of files changed in the commit
+          register: commit_files_result
+          ansible.builtin.uri:
+            url: "{{ github_api_url | default('https://api.github.com') }}/repos/{{ github_repo_full_name }}/commits/{{ app_git_sha }}"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ github_token }}"
+              Accept: application/vnd.github+json
+            status_code: [200]
+
+        - name: End play early when no app/ files were changed
+          when: commit_files_result.json.files | map(attribute='filename') | select('match', '^app/') | list | length == 0
+          vars:
+            github_status_state: success
+            github_status_description: "Skipped — no app/ changes detected"
+          block:
+            - name: Post a success status so the commit check is not left pending
+              ansible.builtin.include_role:
+                name: demo.lightwell.report_status
+
+            - name: End play
+              ansible.builtin.meta: end_play
+
     - name: Mark the GitHub status check as pending (Prod only)
       when: app_environment == 'prod'
       vars:

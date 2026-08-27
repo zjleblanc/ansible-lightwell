@@ -9,27 +9,26 @@ payload and launches the correct job template:
 
 | Event | Condition | Launches |
 | --- | --- | --- |
-| `pull_request` (opened/synchronize/reopened) | PR is present **and** `app/` files changed | `Lightwell - Build & Test` |
-| `push` to `refs/heads/main` | ref is main, not a deletion, **and** `app/` files changed | `Lightwell - Deploy Prod` |
+| `pull_request` (opened/synchronize/reopened) | PR is present | `Lightwell - Build & Test` |
+| `push` to `refs/heads/main` | ref is main, not a deletion | `Lightwell - Deploy Prod` |
+
+The rulebook does not filter by changed file path -- see below.
 
 ### Path filtering
 
-The `demo.lightwell.path_filter` event filter plugin inspects each event
-before rules are evaluated. For push events, it scans
-`commits[].added/modified/removed` for file paths matching the configured
-prefixes (currently `app/`). Pull-request payloads don't carry file lists,
-so the filter defaults to `true` — letting the event through unconditionally.
+This rulebook does **not** filter events by changed file path. An earlier
+version used a custom `demo.lightwell.path_filter` EDA event filter plugin
+from this project's own collection, but Decision Environments don't mount
+local collections -- only collections published to a reachable Galaxy/Hub
+would be available to a Rulebook Activation's plugins. That made the
+filter unusable outside of local testing.
 
-If you need to watch additional directories, add them to the `paths` list
-in the source's `filters` block:
-
-```yaml
-filters:
-  - demo.lightwell.path_filter:
-      paths:
-        - "app/"
-        - "collections/"
-```
+Path filtering now happens entirely in
+[`playbooks/deploy.yml`](../playbooks/deploy.yml): both the PR (test) and
+push (prod) code paths call the GitHub API to list changed files and exit
+early via `meta: end_play` when nothing under `app/` was touched. See the
+root [`README.md`](../README.md#path-based-filtering-only-deploy-when-app-changes)
+for details.
 
 Full setup instructions (creating the Event Stream, its HMAC credential,
 the Decision Environment, the EDA project, and the Rulebook Activation
