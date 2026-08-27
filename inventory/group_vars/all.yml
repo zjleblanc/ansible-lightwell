@@ -1,6 +1,6 @@
 ---
-app_image_registry: quay.io/lightwell-demo
-app_image_name: lightwell-patch-demo
+app_image_registry: quay.io/zleblanc
+app_image_name: lightwell-patch-demo-app
 lightwell_registry_host: packages.redhat.com
 
 # Fallback used only when a job template is launched manually (without the
