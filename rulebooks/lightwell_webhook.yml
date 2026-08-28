@@ -16,7 +16,7 @@
       action:
         run_job_template:
           name: Lightwell // Build & Test
-          organization: Default
+          organization: Autodotes
           job_args:
             extra_vars:
               app_environment: test
@@ -33,7 +33,7 @@
       action:
         run_job_template:
           name: Lightwell - Deploy Prod
-          organization: Default
+          organization: Autodotes
           job_args:
             extra_vars:
               app_environment: prod
