@@ -41,7 +41,9 @@
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
 
     - name: Catch and Log
-      condition: event.payload.pusher is not defined
+      condition: >-
+        event.payload is defined and
+        event.payload.pusher is not defined
       action:
         debug:
           var: event.payload
