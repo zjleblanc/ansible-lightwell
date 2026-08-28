@@ -220,6 +220,40 @@ main {
   background: rgba(154, 162, 177, 0.12);
 }
 
+.code-panel {
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-panel-border);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.code-panel h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+  color: var(--lw-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.code-snippet {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--lw-panel-border);
+}
+
+.code-snippet .highlight {
+  margin: 0;
+}
+
+.code-snippet pre {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
 .timeline {
   background: var(--lw-panel);
   border: 1px solid var(--lw-panel-border);

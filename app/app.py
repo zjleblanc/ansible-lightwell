@@ -10,11 +10,15 @@ from typing import Any
 
 import yaml
 from flask import Flask, jsonify, render_template
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
 
 APP_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = APP_ROOT / "config" / "app_config.yaml"
+REQUIREMENTS_PATH = APP_ROOT / "requirements.txt"
 
-TRACKED_PACKAGES = ("Flask", "PyYAML", "Jinja2", "gunicorn")
+TRACKED_PACKAGES = ("Flask", "PyYAML", "Jinja2", "gunicorn", "Pygments")
 
 
 def load_config() -> dict[str, Any]:
@@ -41,6 +45,19 @@ def get_package_versions() -> list[dict[str, Any]]:
     return versions
 
 
+def get_requirements_snippet() -> dict[str, str]:
+    """Render app/requirements.txt as syntax-highlighted HTML via Pygments."""
+    source = REQUIREMENTS_PATH.read_text(encoding="utf-8")
+    # No dedicated pip-requirements lexer ships with Pygments; "properties"
+    # (key=value, # comments) highlights the name==version syntax closely enough.
+    lexer = get_lexer_by_name("properties")
+    formatter = HtmlFormatter(style="monokai", cssclass="highlight")
+    return {
+        "html": highlight(source, lexer, formatter),
+        "css": formatter.get_style_defs(".highlight"),
+    }
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["CONFIG_DATA"] = load_config()
@@ -55,6 +72,7 @@ def create_app() -> Flask:
             dependencies=config_data.get("dependencies", {}).get("tracked", []),
             patch_timeline=config_data.get("patch_timeline", []),
             package_versions=get_package_versions(),
+            requirements_snippet=get_requirements_snippet(),
             now=datetime.now(UTC),
         )
 

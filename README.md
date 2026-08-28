@@ -51,7 +51,7 @@ flowchart TD
 ansible-lightwell/
 ├── app/                    # Demo Flask application (PyYAML + Jinja2)
 │   ├── app.py
-│   ├── requirements.txt    # Points at the Lightwell Remediated index
+│   ├── requirements.txt    # Uses the Lightwell Remediated index as primary
 │   ├── templates/          # Jinja2 dashboard templates
 │   ├── config/             # YAML config loaded by PyYAML
 │   ├── static/             # Lightwell-themed CSS
@@ -196,11 +196,12 @@ by step in [`docs/aap-setup.md`](docs/aap-setup.md).
 
 ## Lightwell Network configuration
 
-`app/requirements.txt` adds the Lightwell Remediated repository as an
-extra index:
+`app/requirements.txt` sets the Lightwell Remediated repository as the
+primary index, with PyPI as a fallback for any package it doesn't mirror:
 
 ```
---extra-index-url https://packages.redhat.com/lightwell/python/remediated/simple
+--index-url https://packages.redhat.com/lightwell/python/remediated/simple
+--extra-index-url https://pypi.org/simple
 ```
 
 Authentication uses a Lightwell Network service account (format

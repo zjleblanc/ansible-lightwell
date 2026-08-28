@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<style>{{ requirements_snippet.css | safe }}</style>
+{% endblock %}
+
 {% block content %}
 <section class="hero">
     <h1>{{ service.name }}</h1>
@@ -51,6 +55,13 @@
             </li>
             {% endfor %}
         </ul>
+    </div>
+</section>
+
+<section class="code-panel">
+    <h2>app/requirements.txt</h2>
+    <div class="code-snippet">
+        {{ requirements_snippet.html | safe }}
     </div>
 </section>
 
