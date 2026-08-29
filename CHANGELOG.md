@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-29 — Fix nested Podman builds in AAP execution environments
+
+### Fixed
+
+- `demo.lightwell.build_app` now handles the common AAP Execution Environment
+  failure unpacking UBI layers (`insufficient UIDs or GIDs available in user
+  namespace`). The role configures subordinate ID ranges when privilege
+  escalation is available, runs builds with `BUILDAH_ISOLATION=chroot`, and
+  invokes Podman via a wrapper that passes `--storage-opt
+  ignore_chown_errors=true`.
+
 ## 2026-08-27 — Add ansible.cfg for local collection resolution
 
 ### Added
