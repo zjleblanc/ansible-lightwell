@@ -1,9 +1,9 @@
 ---
-# Manual rollback playbook for test or prod environments.
 - name: Roll back the Lightwell demo application to its previous version
-  hosts: "{{ target_environment | default('prod') }}"
+  hosts: "env_{{ target_environment }}"
   gather_facts: false
-  vars:
-    app_environment: "{{ target_environment | default('prod') }}"
+
   roles:
     - role: demo.lightwell.rollback
+      vars:
+        app_environment: "{{ target_environment }}"

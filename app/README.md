@@ -1,8 +1,6 @@
 # Lightwell Patch Pipeline Demo App
 
 A small Flask dashboard used to demo the Lightwell + Ansible patch pipeline.
-It exercises both target libraries in a way that's visible in the UI, not
-just in `requirements.txt`:
 
 - **PyYAML** loads `config/app_config.yaml` -- service metadata, feature
   flags, and a patch timeline -- at startup.
