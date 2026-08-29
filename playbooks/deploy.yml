@@ -48,7 +48,7 @@
         name: demo.lightwell.build_app
 
 - name: Deploy and verify the Lightwell demo application
-  hosts: "{{ app_environment | default(omit) }}"
+  hosts: "{{ ('env_' ~ app_environment) if app_environment is defined else omit }}"
   gather_facts: false
   pre_tasks:
     - name: Check whether the push commit touches app/ files (Prod only)
