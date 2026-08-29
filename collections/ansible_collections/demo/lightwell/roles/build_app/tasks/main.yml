@@ -1,4 +1,50 @@
 ---
+# Nested Podman (e.g. inside an AAP Execution Environment) often cannot map
+# every UID/GID from a base image into the available user namespace. Configure
+# subordinate IDs when possible, then tolerate chown failures and use chroot
+# isolation so pulls/builds can proceed.
+
+- name: Detect the current build user for rootless Podman
+  register: build_user_whoami
+  changed_when: false
+  ansible.builtin.command:
+    cmd: whoami
+
+- name: Ensure subordinate ID mappings for rootless Podman
+  block:
+    - name: Ensure /etc/subuid has a subordinate UID range for the build user
+      register: subuid_entry
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/subuid
+        regexp: "^{{ build_user_whoami.stdout }}:"
+        line: "{{ build_user_whoami.stdout }}:100000:65536"
+        create: true
+        mode: "0644"
+
+    - name: Ensure /etc/subgid has a subordinate GID range for the build user
+      register: subgid_entry
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/subgid
+        regexp: "^{{ build_user_whoami.stdout }}:"
+        line: "{{ build_user_whoami.stdout }}:100000:65536"
+        create: true
+        mode: "0644"
+
+    - name: Migrate Podman storage after subordinate ID ranges change
+      when: subuid_entry is changed or subgid_entry is changed
+      changed_when: true
+      ansible.builtin.command:
+        cmd: podman system migrate
+  rescue:
+    - name: Continue when subordinate ID updates are unavailable
+      ansible.builtin.debug:
+        msg: >-
+          Could not update /etc/subuid or /etc/subgid
+          ({{ ansible_failed_result.msg | default('privilege escalation unavailable') }}).
+          Continuing with ignore_chown_errors for nested builds.
+
 - name: Ensure application source directory exists on the build host
   register: app_source_stat
   ansible.builtin.stat:
@@ -12,51 +58,77 @@
       expects to run against a checkout of the ansible-lightwell repository
       (e.g. the AAP project working directory).
 
-- name: Create a secure temporary netrc file for Lightwell authentication
-  register: lightwell_netrc_file
-  ansible.builtin.tempfile:
-    state: file
-    suffix: netrc
+- name: Build the application image with Lightwell auth and nested-Podman workarounds
+  block:
+    - name: Create a secure temporary netrc file for Lightwell authentication
+      register: lightwell_netrc_file
+      ansible.builtin.tempfile:
+        state: file
+        suffix: netrc
 
-- name: Write Lightwell Network credentials to the temporary netrc file
-  no_log: true
-  ansible.builtin.copy:
-    dest: "{{ lightwell_netrc_file.path }}"
-    content: |
-      machine {{ lightwell_registry_host }}
-      login {{ lightwell_username }}
-      password {{ lightwell_password }}
-    mode: "0600"
+    - name: Write Lightwell Network credentials to the temporary netrc file
+      no_log: true
+      ansible.builtin.copy:
+        dest: "{{ lightwell_netrc_file.path }}"
+        content: |
+          machine {{ lightwell_registry_host }}
+          login {{ lightwell_username }}
+          password {{ lightwell_password }}
+        mode: "0600"
 
-- name: Build the application container image
-  register: build_result
-  containers.podman.podman_image:
-    name: "{{ app_image_registry }}/{{ app_image_name }}"
-    tag: "{{ app_image_tag }}"
-    path: "{{ app_source_dir }}"
-    build:
-      file: Containerfile
-      force_rm: true
-      extra_args: "--secret id=netrc,src={{ lightwell_netrc_file.path }}"
+    - name: Create a Podman wrapper that ignores chown errors on unpack
+      register: podman_wrapper_file
+      ansible.builtin.tempfile:
+        state: file
+        suffix: -lightwell-podman
 
-- name: Remove the temporary netrc file
-  no_log: true
-  ansible.builtin.file:
-    path: "{{ lightwell_netrc_file.path }}"
-    state: absent
+    - name: Write the Podman wrapper script
+      ansible.builtin.copy:
+        dest: "{{ podman_wrapper_file.path }}"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          exec podman --storage-opt ignore_chown_errors=true "$@"
+
+    - name: Build the application container image
+      register: build_result
+      environment:
+        BUILDAH_ISOLATION: chroot
+      containers.podman.podman_image:
+        name: "{{ app_image_registry }}/{{ app_image_name }}"
+        tag: "{{ app_image_tag }}"
+        path: "{{ app_source_dir }}"
+        executable: "{{ podman_wrapper_file.path }}"
+        build:
+          file: Containerfile
+          force_rm: true
+          extra_args: "--secret id=netrc,src={{ lightwell_netrc_file.path }}"
+  always:
+    - name: Remove the temporary netrc file
+      when: lightwell_netrc_file is defined and lightwell_netrc_file.path is defined
+      no_log: true
+      ansible.builtin.file:
+        path: "{{ lightwell_netrc_file.path }}"
+        state: absent
+
+    - name: Remove the temporary Podman wrapper
+      when: podman_wrapper_file is defined and podman_wrapper_file.path is defined
+      ansible.builtin.file:
+        path: "{{ podman_wrapper_file.path }}"
+        state: absent
 
 - name: Tag the image for the target environment
-  changed_when: true
-  ansible.builtin.command:
-    cmd: >-
-      podman tag {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}
-      {{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest
+  containers.podman.podman_tag:
+    image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
+    target_names:
+      - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest"
 
 - name: Push the built image(s) to the registry
   when: app_image_push | bool
   loop:
     - "{{ app_image_tag }}"
     - "{{ app_environment }}-latest"
-  changed_when: true
-  ansible.builtin.command:
-    cmd: "podman push {{ app_image_registry }}/{{ app_image_name }}:{{ item }}"
+  containers.podman.podman_image:
+    name: "{{ app_image_registry }}/{{ app_image_name }}"
+    tag: "{{ item }}"
+    push: true

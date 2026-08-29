@@ -1,0 +1,53 @@
+---
+description: Prefer containers.podman collection modules over raw podman CLI calls
+globs: **/*.yml
+alwaysApply: false
+---
+
+# Prefer the `containers.podman` Collection
+
+Do not shell out to the `podman` CLI via `ansible.builtin.command`,
+`ansible.builtin.shell`, or `ansible.builtin.script` when an equivalent
+`containers.podman` module exists. Use the collection module so behavior is
+idempotent, `changed_when` is computed correctly, and output is
+structured instead of parsed from text.
+
+## Common mappings
+
+| Instead of `podman ...` | Use |
+| --- | --- |
+| `build` / `pull` / `push` | `containers.podman.podman_image` |
+| `tag` | `containers.podman.podman_tag` |
+| `run` / `stop` / `rm` | `containers.podman.podman_container` |
+| `login` | `containers.podman.podman_login` |
+| `inspect` (container) | `containers.podman.podman_container_info` |
+| `inspect` (image) | `containers.podman.podman_image_info` |
+| `generate systemd` | `containers.podman.podman_generate_systemd` |
+
+## Example
+
+```yaml
+# BAD
+- name: Push the built image
+  changed_when: true
+  ansible.builtin.command:
+    cmd: "podman push {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
+
+# GOOD
+- name: Push the built image
+  containers.podman.podman_image:
+    name: "{{ app_image_registry }}/{{ app_image_name }}"
+    tag: "{{ app_image_tag }}"
+    push: true
+```
+
+## Accepted exceptions
+
+- `podman system migrate` has no collection module equivalent; `command` is
+  fine for that specific subcommand.
+- A temporary wrapper script invoked via a module's `executable` parameter
+  is fine when a global flag (e.g. `--storage-opt`) has no module-level
+  parameter, since the module itself is still doing the work.
+
+Check the `containers.podman` module index before adding a new raw CLI
+call -- new modules land there faster than this rule can enumerate them.
