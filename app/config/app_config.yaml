@@ -5,7 +5,7 @@ service:
     A Flask dashboard demonstrating automated Python dependency patching
     sourced from the Red Hat & IBM Lightwell Network, orchestrated end-to-end
     with Renovate and Ansible Automation Platform.
-  version: "1.0.0"
+  version: "1.0.1"
 
 features:
   dark_mode: true
