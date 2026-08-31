@@ -4,3 +4,11 @@ app_host_port: 8080
 app_previous_image_file: /opt/lightwell-demo/previous_image.txt
 systemd_unit_dir: /etc/systemd/system
 manage_systemd_unit: true
+
+# Container image coordinates. Mirrors build_app's defaults so this role
+# still resolves the correct image if the inventory's group_vars/all.yml
+# (app_image_registry/app_image_name) isn't applied to the target host, and
+# app_git_sha is supplied without an explicit app_image_tag extra var.
+app_image_registry: quay.io/zleblanc
+app_image_name: lightwell-patch-demo-app
+app_image_tag: "{{ app_git_sha | default('dev') }}"
