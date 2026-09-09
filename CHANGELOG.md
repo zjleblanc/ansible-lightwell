@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-09 — Build application image as root to avoid setgroups failure
+
+### Fixed
+
+- The application `Containerfile`'s builder stage now runs as `USER 0`
+  instead of the base image's default non-root user. Buildah's `chroot`
+  isolation still calls `setgroups()` to set the supplemental groups of
+  the image's default user before running the `RUN` instruction, and
+  that call fails inside an AAP Execution Environment's nested Podman
+  (`error setting supplemental groups list: operation not permitted`).
+  Root has no supplemental groups to set, so the call is skipped. The
+  final stage still runs as `USER 1001`, so runtime behavior is
+  unchanged; only the `COPY --from=builder` source path moved from
+  `/opt/app-root/src/.local` to `/root/.local`, since `pip install --user`
+  now installs into root's home directory.
+
 ## 2026-09-09 — Stop configuring subordinate IDs to avoid newuidmap failure
 
 ### Fixed

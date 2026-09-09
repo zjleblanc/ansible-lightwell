@@ -4,6 +4,12 @@
 
 FROM registry.access.redhat.com/ubi9/python-312:latest AS builder
 
+# Build as root: buildah's chroot isolation still calls setgroups() for the
+# image's default (non-root) user, which nested Podman inside an AAP
+# Execution Environment cannot do ("error setting supplemental groups
+# list: operation not permitted"). Root has no supplemental groups to set.
+USER 0
+
 WORKDIR /opt/app-root/src
 
 COPY requirements.txt ./
@@ -15,7 +21,7 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 WORKDIR /opt/app-root/src
 
-COPY --from=builder /opt/app-root/src/.local /opt/app-root/src/.local
+COPY --from=builder /root/.local /opt/app-root/src/.local
 COPY app.py ./
 COPY templates/ templates/
 COPY static/ static/
