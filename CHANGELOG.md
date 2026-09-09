@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-09-09 — Report failure status instead of hanging pending on hard errors
+
+### Fixed
+
+- `playbooks/deploy.yml` no longer leaves the GitHub commit/PR check stuck
+  in `pending` when the build or deploy/health-check/rollback sequence
+  fails with an unhandled task error. The build step and the
+  deploy-verify-rollback sequence are now wrapped in `block`/`rescue`
+  (with `always` for the latter) so a `failure` status is always reported
+  to `demo.lightwell.report_status` before the play fails, instead of the
+  play aborting silently after only a `pending` status was posted.
+- The build failure path re-raises after reporting so the AAP job itself
+  is still marked failed, not just the GitHub check.
+
+## 2026-09-09 — Fix newuidmap failure in nested Podman builds
+
+### Fixed
+
+- `demo.lightwell.build_app` now sets `driver = "vfs"` in the temporary
+  storage.conf used for builds, avoiding Podman's automatic `overlay`
+  driver selection, which requires `newuidmap`/`newgidmap` user-namespace
+  setup that fails inside AAP Execution Environments
+  (`newuidmap: write to uid_map failed: Operation not permitted`).
+- The build task now also passes `--isolation chroot` directly via
+  `extra_args`, rather than relying solely on the `BUILDAH_ISOLATION`
+  environment variable, so isolation mode is applied consistently across
+  `containers.podman` collection versions.
+
 ## 2026-08-29 — Fix nested Podman builds in AAP execution environments
 
 ### Fixed
