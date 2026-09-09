@@ -65,8 +65,8 @@
       when: registry_auth_file is defined
       no_log: "{{ build_app_no_log }}"
       ansible.builtin.copy:
+        src: "{{ registry_auth_file }}"
         dest: "{{ remote_build_dir.path }}/.registry-auth.json"
-        content: "{{ lookup('file', registry_auth_file) }}"
         mode: "0600"
 
     - name: Push the built image(s) to the registry

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-09 — Fix registry auth file copy writing a path instead of file contents
+
+### Fixed
+
+- `demo.lightwell.build_app` and `demo.lightwell.deploy_app`: replaced
+  `content: "{{ lookup('file', registry_auth_file) }}"` with
+  `src: "{{ registry_auth_file }}"` on the registry auth file copy tasks.
+  The `lookup('file', ...)` plugin was reading a `.source.json` reference
+  file whose content was another path string rather than the auth JSON,
+  causing `podman_image` to receive an invalid auth file. Using `src:`
+  lets `ansible.builtin.copy` read the file directly from the
+  controller/EE filesystem and transfer the correct bytes to the remote
+  host.
+- Removed stale comment in `deploy_app` that described the now-gone
+  `lookup` workaround.
+
 ## 2026-09-09 — Make no_log overridable on credential-writing tasks
 
 ### Changed
