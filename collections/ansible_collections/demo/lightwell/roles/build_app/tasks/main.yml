@@ -1,8 +1,12 @@
 ---
 # Nested Podman (e.g. inside an AAP Execution Environment) often cannot map
-# every UID/GID from a base image into the available user namespace. Configure
-# subordinate IDs when possible, then tolerate chown failures and use chroot
-# isolation so pulls/builds can proceed.
+# every UID/GID from a base image into the available user namespace, and the
+# nested environment typically lacks the capabilities newuidmap/newgidmap
+# need to configure a full subordinate ID range. Ensure no subordinate ID
+# range is configured for the build user so Podman falls back to its
+# single-ID rootless mapping (no newuidmap/newgidmap call), then tolerate
+# the resulting chown failures and use chroot isolation so pulls/builds can
+# proceed.
 
 - name: Detect the current build user for rootless Podman
   register: build_user_whoami
@@ -16,27 +20,23 @@
   ansible.builtin.command:
     cmd: id -u
 
-- name: Ensure subordinate ID mappings for rootless Podman
+- name: Ensure no subordinate ID mappings force Podman into newuidmap
   block:
-    - name: Ensure /etc/subuid has a subordinate UID range for the build user
+    - name: Remove any subordinate UID range for the build user
       register: subuid_entry
       become: true
       ansible.builtin.lineinfile:
         path: /etc/subuid
         regexp: "^{{ build_user_whoami.stdout }}:"
-        line: "{{ build_user_whoami.stdout }}:100000:65536"
-        create: true
-        mode: "0644"
+        state: absent
 
-    - name: Ensure /etc/subgid has a subordinate GID range for the build user
+    - name: Remove any subordinate GID range for the build user
       register: subgid_entry
       become: true
       ansible.builtin.lineinfile:
         path: /etc/subgid
         regexp: "^{{ build_user_whoami.stdout }}:"
-        line: "{{ build_user_whoami.stdout }}:100000:65536"
-        create: true
-        mode: "0644"
+        state: absent
 
     - name: Migrate Podman storage after subordinate ID ranges change
       when: subuid_entry is changed or subgid_entry is changed
@@ -44,10 +44,10 @@
       ansible.builtin.command:
         cmd: podman system migrate
   rescue:
-    - name: Continue when subordinate ID updates are unavailable
+    - name: Continue when subordinate ID cleanup is unavailable
       ansible.builtin.debug:
         msg: >-
-          Could not update /etc/subuid or /etc/subgid
+          Could not remove /etc/subuid or /etc/subgid entries
           ({{ ansible_failed_result.msg | default('privilege escalation unavailable') }}).
           Continuing with ignore_chown_errors for nested builds.
 

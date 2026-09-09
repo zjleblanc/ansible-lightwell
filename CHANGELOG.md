@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-09 — Stop configuring subordinate IDs to avoid newuidmap failure
+
+### Fixed
+
+- `demo.lightwell.build_app` no longer writes subordinate UID/GID ranges to
+  `/etc/subuid`/`/etc/subgid` for the build user, and now actively removes
+  any pre-existing entries instead. Configuring a subordinate ID range is
+  exactly what makes Podman's rootless setup invoke
+  `newuidmap`/`newgidmap` to build the namespace mapping; when those
+  binaries lack the capabilities needed inside an AAP Execution
+  Environment, that call hard-fails
+  (`newuidmap: write to uid_map failed: Operation not permitted`) even
+  though the VFS storage driver is otherwise in effect. With no
+  subordinate ID range configured, Podman falls back to its single-ID
+  rootless mapping (no `newuidmap` call at all), and the existing
+  `ignore_chown_errors = "true"` + `driver = "vfs"` storage.conf settings
+  already tolerate the resulting squashed ownership during layer
+  extraction.
+
 ## 2026-09-09 — Fix VFS driver override causing newuidmap failure
 
 ### Fixed
