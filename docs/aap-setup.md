@@ -31,8 +31,11 @@ flowchart LR
 
 - An AAP instance (2.5+) with Event-Driven Ansible enabled, reachable from
   GitHub with a valid TLS certificate on its Event Stream endpoint.
-- Two Podman-capable RHEL hosts (or host groups) reachable over SSH: one
-  for `test`, one for `prod`.
+- A single Podman-capable RHEL host reachable over SSH (inventory group
+  `rhlw`) that both builds the image and hosts the `test` and `prod`
+  deployments. For this demo, `test` and `prod` run as separate
+  containers on separate ports (`8080`/`8081`) on that same host so they
+  don't collide.
 - A container registry the AAP execution environment can push to and the
   target hosts can pull from (default in this repo: `quay.io/lightwell-demo`).
 - A Lightwell Network service account (username in the form
@@ -149,8 +152,7 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
 ### 1c. Machine Credential
 
 - Type: **Machine**
-- SSH credentials (or SSH key) AAP uses to reach the `test` and `prod`
-  Podman hosts.
+- SSH credentials (or SSH key) AAP uses to reach the `rhlw` Podman host.
 
 ### 1d. Container Registry Credential (optional)
 
@@ -188,9 +190,11 @@ repository URL so the rulebook is available to Rulebook Activations.
 **Automation Execution -> Infrastructure -> Inventories -> Add**
 
 - Name: `lightwell-demo`
-- Add a `test` group and a `prod` group, each containing the relevant
-  Podman host(s) -- mirror `inventory/hosts.yml` in this repo, or import it
-  directly as a source-controlled inventory pointed at the same project.
+- Add a single `rhlw` group containing the Podman host -- mirror
+  `inventory/hosts.yml` in this repo, or import it directly as a
+  source-controlled inventory pointed at the same project. This one host
+  is used for building the image and for both the `test` and `prod`
+  deployments.
 - Attach the Machine credential from step 1c.
 
 ## 4. Job Templates
@@ -207,7 +211,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/deploy.yml` |
 | Credentials | Lightwell Demo Service Account, Machine, Lightwell GitHub Status Reporter |
-| Limit | `test` |
+| Limit | `rhlw` |
 | Source Control Branch/Tag/Commit override | Prompt on launch (so PR builds check out the PR head SHA) |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: test`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
@@ -219,7 +223,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/deploy.yml` |
 | Credentials | Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
-| Limit | `prod` |
+| Limit | `rhlw` |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: prod`, `app_git_sha`, `github_repo_full_name`) |
 
 ### 4c. Lightwell - Rollback (manual)

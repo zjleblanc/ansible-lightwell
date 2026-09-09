@@ -1,32 +1,21 @@
 # Lightwell Demo application image.
-# Authenticates via a build-context ".netrc" removed within the same RUN
-# (see CHANGELOG.md). The builder stage is discarded by the multi-stage
-# build, so credentials never reach the final image.
+# Authenticates via a build-context ".netrc" removed within the same RUN.
+# The builder stage is discarded by the multi-stage build, so credentials
+# never reach the final image.
 
 FROM registry.access.redhat.com/ubi9/python-312:latest AS builder
-
-# Build as root: buildah's chroot isolation still calls setgroups() for the
-# image's default (non-root) user, which nested Podman inside an AAP
-# Execution Environment cannot do ("error setting supplemental groups
-# list: operation not permitted"). Root has no supplemental groups to set.
-USER 0
 
 WORKDIR /opt/app-root/src
 
 COPY requirements.txt .netrc ./
 
-# The --mount=type=secret path triggers the same setgroups() call as
-# above, independent of the image user, and fails identically under
-# nested Podman. The builder stage (and its COPY/.netrc layer) is
-# discarded by the multi-stage build, so removing the file here is just
-# hygiene for anyone inspecting this stage directly.
 RUN pip install --no-cache-dir --user -r requirements.txt && rm -f .netrc
 
 FROM registry.access.redhat.com/ubi9/python-312:latest
 
 WORKDIR /opt/app-root/src
 
-COPY --from=builder /root/.local /opt/app-root/src/.local
+COPY --from=builder /opt/app-root/.local /opt/app-root/src/.local
 COPY app.py ./
 COPY templates/ templates/
 COPY static/ static/

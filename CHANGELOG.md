@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-09-09 — Simplify build and deploy onto a single provided RHEL host
+
+### Changed
+
+- `demo.lightwell.build_app` now assumes a real RHEL host is provided
+  instead of building inside the AAP Execution Environment on
+  `localhost`. All nested-Podman workarounds are removed: isolated
+  `storage.conf`/graphroot/runroot, `BUILDAH_ISOLATION`,
+  `--isolation chroot`, and `become: true` on the build/tag/push tasks.
+  The application source is synced to a temporary directory on the build
+  host via `ansible.posix.synchronize` before a standard rootless
+  `containers.podman.podman_image` build.
+- `app/Containerfile` no longer runs the builder stage as `USER 0`; it
+  uses the image's default non-root user, since the `setgroups()` failure
+  that required root only occurred under nested Podman.
+- Replaced the previous `test`/`prod` inventory groups with a single
+  `rhlw` group (`inventory/hosts.yml`, `inventory/group_vars/rhlw.yml`).
+  One host now serves as the build host and the `test`/`prod` deployment
+  target, and `playbooks/deploy.yml` / `playbooks/rollback.yml` target
+  `hosts: rhlw` for every play instead of `hosts: localhost` /
+  `hosts: "env_{{ app_environment }}"`.
+- Since a single host now runs both environments, `demo.lightwell.deploy_app`,
+  `demo.lightwell.health_check`, and `demo.lightwell.rollback` derive
+  `app_container_name` and `app_host_port` from `app_environment` in
+  their role defaults (`test` on port `8080`, `prod` on port `8081`) so
+  the two deployments don't collide, and namespace
+  `app_previous_image_file` by environment for the same reason.
+- Updated `README.md`, `docs/aap-setup.md`, and the affected role
+  `README.md` files (inventory setup, Machine credential scope, job
+  template `Limit` values) to reflect the single-host topology.
+
 ## 2026-09-09 — Restore ignore_chown_errors after switching to rootful builds
 
 ### Fixed

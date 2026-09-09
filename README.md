@@ -73,7 +73,7 @@ ansible-lightwell/
 ├── eda/
 │   ├── README.md           # How the rulebook routes GitHub events
 │   └── rulebooks/lightwell_webhook.yml   # Routes PR/push events to job templates
-├── inventory/               # test/prod host groups and vars
+├── inventory/               # Single "rhlw" host group and vars
 ├── renovate.json           # Renovate config targeting the Lightwell index
 ├── docs/aap-setup.md       # Full AAP configuration walkthrough
 └── .pre-commit-config.yaml, .ansible-lint, .yamllint.yml, .gitleaks.toml, ruff.toml
@@ -263,8 +263,10 @@ pre-commit run --all-files
   [`docs/aap-setup.md`](docs/aap-setup.md) section 1b.
 - An AAP instance (2.5+) with Event-Driven Ansible enabled and reachable
   from GitHub -- see [`docs/aap-setup.md`](docs/aap-setup.md).
-- Two Podman-capable RHEL hosts (or host groups), one for `test` and one
-  for `prod`.
+- A single Podman-capable RHEL host (inventory group `rhlw`) that AAP
+  both builds the application image on and deploys `test`/`prod` to. For
+  this demo, both environments run as separate containers on separate
+  ports (`8080` and `8081`) on that one host so they don't collide.
 - A container registry both AAP and the target hosts can reach (default:
   `quay.io/lightwell-demo`).
 - A Lightwell Network service account.

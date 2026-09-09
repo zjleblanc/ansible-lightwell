@@ -1,6 +1,6 @@
 ---
 - name: Roll back the Lightwell demo application to its previous version
-  hosts: "{{ ('env_' ~ target_environment) if target_environment is defined else omit }}"
+  hosts: rhlw
   gather_facts: false
 
   roles:

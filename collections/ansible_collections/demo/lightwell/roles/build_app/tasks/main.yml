@@ -1,15 +1,5 @@
 ---
-# Nested Podman (e.g. inside an AAP Execution Environment) cannot complete a
-# rootless build here: it lacks the newuidmap/newgidmap capabilities for a
-# full subordinate-ID mapping, and even the single-ID rootless fallback runs
-# in a user namespace where the kernel denies setgroups(). Buildah's chroot
-# isolation calls setgroups() unconditionally in versions before 1.45.0
-# ("error setting supplemental groups list: operation not permitted"),
-# which is older than what ships in this EE. Build, tag, and push as real
-# root via `become` instead, which needs neither a subordinate-ID mapping
-# nor setgroups() to succeed.
-
-- name: Ensure application source directory exists on the build host
+- name: Ensure application source directory exists on the controller
   register: app_source_stat
   ansible.builtin.stat:
     path: "{{ app_source_dir }}"
@@ -24,70 +14,39 @@
 
 - name: Build, tag, and push the application image with Lightwell auth
   block:
-    - name: Determine the build-context netrc path
-      ansible.builtin.set_fact:
-        lightwell_netrc_path: "{{ app_source_dir }}/.netrc"
+    - name: Create a remote build directory on the build host
+      register: remote_build_dir
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: -lightwell-build
+
+    - name: Sync application source to the build host
+      ansible.posix.synchronize:
+        src: "{{ app_source_dir }}/"
+        dest: "{{ remote_build_dir.path }}/"
+        recursive: true
 
     - name: Write Lightwell Network credentials to the build-context netrc file
       no_log: true
       ansible.builtin.copy:
-        dest: "{{ lightwell_netrc_path }}"
+        dest: "{{ remote_build_dir.path }}/.netrc"
         content: |
           machine {{ lightwell_registry_host }}
           login {{ lightwell_username }}
           password {{ lightwell_password }}
         mode: "0600"
 
-    - name: Create isolated storage directories for the build
-      register: podman_build_storage
-      ansible.builtin.tempfile:
-        state: directory
-        suffix: -lightwell-podman-storage
-
-    - name: Create isolated runroot directory for the build
-      register: podman_build_runroot
-      ansible.builtin.tempfile:
-        state: directory
-        suffix: -lightwell-podman-runroot
-
-    - name: Create a temporary storage.conf pointed at the isolated directories
-      register: podman_storage_conf
-      ansible.builtin.tempfile:
-        state: file
-        suffix: -lightwell-storage.conf
-
-    - name: Write the isolated storage.conf
-      ansible.builtin.copy:
-        dest: "{{ podman_storage_conf.path }}"
-        mode: "0644"
-        content: |
-          [storage]
-          driver = "vfs"
-          graphroot = "{{ podman_build_storage.path }}"
-          runroot = "{{ podman_build_runroot.path }}"
-
-          [storage.options]
-          ignore_chown_errors = "true"
-
     - name: Build the application container image
-      become: true
       register: build_result
-      environment:
-        BUILDAH_ISOLATION: chroot
-        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ app_image_tag }}"
-        path: "{{ app_source_dir }}"
+        path: "{{ remote_build_dir.path }}"
         build:
           file: Containerfile
           force_rm: true
-          extra_args: "--isolation chroot"
 
     - name: Tag the image for the target environment
-      become: true
-      environment:
-        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
       containers.podman.podman_tag:
         image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
         target_names:
@@ -95,40 +54,16 @@
 
     - name: Push the built image(s) to the registry
       when: app_image_push | bool
-      become: true
       loop:
         - "{{ app_image_tag }}"
         - "{{ app_environment }}-latest"
-      environment:
-        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ item }}"
         push: true
   always:
-    - name: Remove the build-context netrc file
-      when: lightwell_netrc_path is defined
-      no_log: true
+    - name: Remove the remote build directory
+      when: remote_build_dir is defined and remote_build_dir.path is defined
       ansible.builtin.file:
-        path: "{{ lightwell_netrc_path }}"
-        state: absent
-
-    - name: Remove the temporary storage.conf
-      when: podman_storage_conf is defined and podman_storage_conf.path is defined
-      ansible.builtin.file:
-        path: "{{ podman_storage_conf.path }}"
-        state: absent
-
-    - name: Remove the isolated storage directory
-      when: podman_build_storage is defined and podman_build_storage.path is defined
-      become: true
-      ansible.builtin.file:
-        path: "{{ podman_build_storage.path }}"
-        state: absent
-
-    - name: Remove the isolated runroot directory
-      when: podman_build_runroot is defined and podman_build_runroot.path is defined
-      become: true
-      ansible.builtin.file:
-        path: "{{ podman_build_runroot.path }}"
+        path: "{{ remote_build_dir.path }}"
         state: absent

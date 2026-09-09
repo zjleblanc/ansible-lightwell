@@ -9,14 +9,14 @@ can decide whether to proceed, fail, or trigger a rollback.
 
 | Variable | Description |
 | --- | --- |
-| `app_container_name` | Name of the container to check. |
-| `app_host_port` | Host port the application is bound to. |
-| `app_environment` | `test` or `prod`; used only for log messages. |
+| `app_environment` | `test` or `prod`; used to compute the default container name and for log messages. |
 
 ## Common variables (see `defaults/main.yml`)
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `app_container_name` | `lightwell-patch-demo-app-{{ app_environment }}` | Name of the container to check. Defaulted here (rather than only in `deploy_app`) so this role works standalone, e.g. when included from `rollback`. |
+| `app_host_port` | `8080` if `test`, `8081` otherwise | Host port the application is bound to, derived from `app_environment`. |
 | `health_check_container_retries` | `10` | Retries while waiting for the container to report running. |
 | `health_check_container_delay` | `3` | Seconds between container status retries. |
 | `health_check_http_retries` | `10` | Retries while polling `/healthz`. |

@@ -4,3 +4,9 @@ health_check_container_delay: 3
 health_check_http_retries: 10
 health_check_http_delay: 5
 health_check_strict: true
+
+# Derived from app_environment so this role is self-contained when included
+# on its own (e.g. from rollback), rather than relying on deploy_app having
+# set these as role defaults earlier in the same play.
+app_container_name: "lightwell-patch-demo-app-{{ app_environment }}"
+app_host_port: "{{ 8080 if app_environment == 'test' else 8081 }}"

@@ -1,22 +1,17 @@
 # demo.lightwell.build_app
 
 Builds and pushes the Lightwell demo application container image using
-Podman. Authenticates to the Lightwell Network remediated repository at
-build time via a `.netrc` written into the build context and removed
-after the build, so credentials never reach the pushed image (the
-Containerfile's builder stage that briefly holds it is discarded by the
-multi-stage build). A Podman build secret would avoid touching the build
-context at all, but nested Podman inside an AAP Execution Environment
-cannot satisfy the `setgroups()` call that secret mounts trigger -- see
-`CHANGELOG.md`.
+rootless Podman on the demo host (inventory group `rhlw`), which also
+hosts the `test` and `prod` deployments. The application source is
+synced from the controller to a temporary directory on that host via
+`ansible.posix.synchronize`, since the host running the build is a
+separate machine from wherever the playbook itself runs.
 
-Builds, tags, and pushes the image as root (`become: true`) rather than as
-rootless Podman: nested Podman inside an AAP Execution Environment can't
-complete a rootless build here (no `newuidmap`/`newgidmap` capability, and
-the rootless fallback's user namespace denies `setgroups()`, which older
-Buildah releases call unconditionally under `--isolation chroot`). This
-role therefore requires privilege escalation to be available on the host
-running the build.
+Authenticates to the Lightwell Network remediated repository at build
+time via a `.netrc` written into the build context and removed after the
+build, so credentials never reach the pushed image (the Containerfile's
+builder stage that briefly holds it is discarded by the multi-stage
+build).
 
 ## Required variables
 
@@ -35,13 +30,14 @@ running the build.
 | `app_image_name` | `lightwell-patch-demo-app` | Image repository name. |
 | `app_image_tag` | `{{ app_git_sha \| default('dev') }}` | Primary tag for the built image (typically the git commit SHA). |
 | `app_image_push` | `true` | Whether to push the built image to the registry. |
-| `app_environment` | `test` | Used to compute the `<environment>-latest` convenience tag. |
+
+`app_environment` (e.g. `test` or `prod`) must be supplied by the caller;
+it's used to compute the `<environment>-latest` convenience tag.
 
 ## Example
 
 ```yaml
-- hosts: localhost
-  connection: local
+- hosts: rhlw
   roles:
     - role: demo.lightwell.build_app
       vars:

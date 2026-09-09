@@ -1,7 +1,6 @@
 ---
 - name: Build the Lightwell demo application image
-  hosts: localhost
-  connection: local
+  hosts: rhlw
   gather_facts: false
   tasks:
     - name: Check whether the PR touches app/ files (Test only)
@@ -63,7 +62,7 @@
               See the task output above for the underlying error.
 
 - name: Deploy and verify the Lightwell demo application
-  hosts: "{{ ('env_' ~ app_environment) if app_environment is defined else omit }}"
+  hosts: rhlw
   gather_facts: false
   pre_tasks:
     - name: Check whether the push commit touches app/ files (Prod only)
