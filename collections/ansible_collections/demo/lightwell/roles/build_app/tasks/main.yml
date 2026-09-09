@@ -66,16 +66,14 @@
 
 - name: Build the application image with Lightwell auth and nested-Podman workarounds
   block:
-    - name: Create a secure temporary netrc file for Lightwell authentication
-      register: lightwell_netrc_file
-      ansible.builtin.tempfile:
-        state: file
-        suffix: netrc
+    - name: Determine the build-context netrc path
+      ansible.builtin.set_fact:
+        lightwell_netrc_path: "{{ app_source_dir }}/.netrc"
 
-    - name: Write Lightwell Network credentials to the temporary netrc file
+    - name: Write Lightwell Network credentials to the build-context netrc file
       no_log: true
       ansible.builtin.copy:
-        dest: "{{ lightwell_netrc_file.path }}"
+        dest: "{{ lightwell_netrc_path }}"
         content: |
           machine {{ lightwell_registry_host }}
           login {{ lightwell_username }}
@@ -133,13 +131,13 @@
         build:
           file: Containerfile
           force_rm: true
-          extra_args: "--isolation chroot --secret id=netrc,src={{ lightwell_netrc_file.path }}"
+          extra_args: "--isolation chroot"
   always:
-    - name: Remove the temporary netrc file
-      when: lightwell_netrc_file is defined and lightwell_netrc_file.path is defined
+    - name: Remove the build-context netrc file
+      when: lightwell_netrc_path is defined
       no_log: true
       ansible.builtin.file:
-        path: "{{ lightwell_netrc_file.path }}"
+        path: "{{ lightwell_netrc_path }}"
         state: absent
 
     - name: Remove the temporary storage.conf

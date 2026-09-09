@@ -2,8 +2,13 @@
 
 Builds and pushes the Lightwell demo application container image using
 Podman. Authenticates to the Lightwell Network remediated repository at
-build time via a Podman build secret, so no credentials are ever written
-into image layers.
+build time via a `.netrc` written into the build context and removed
+after the build, so credentials never reach the pushed image (the
+Containerfile's builder stage that briefly holds it is discarded by the
+multi-stage build). A Podman build secret would avoid touching the build
+context at all, but nested Podman inside an AAP Execution Environment
+cannot satisfy the `setgroups()` call that secret mounts trigger -- see
+`CHANGELOG.md`.
 
 ## Required variables
 

@@ -1,6 +1,7 @@
 # Lightwell Demo application image.
-# Authenticates via "netrc" build secret (see docs/aap-setup.md).
-# No credentials are baked into layers.
+# Authenticates via a build-context ".netrc" removed within the same RUN
+# (see CHANGELOG.md). The builder stage is discarded by the multi-stage
+# build, so credentials never reach the final image.
 
 FROM registry.access.redhat.com/ubi9/python-312:latest AS builder
 
@@ -12,10 +13,14 @@ USER 0
 
 WORKDIR /opt/app-root/src
 
-COPY requirements.txt ./
+COPY requirements.txt .netrc ./
 
-RUN --mount=type=secret,id=netrc,target=/opt/app-root/src/.netrc,mode=0600 \
-    pip install --no-cache-dir --user -r requirements.txt
+# The --mount=type=secret path triggers the same setgroups() call as
+# above, independent of the image user, and fails identically under
+# nested Podman. The builder stage (and its COPY/.netrc layer) is
+# discarded by the multi-stage build, so removing the file here is just
+# hygiene for anyone inspecting this stage directly.
+RUN pip install --no-cache-dir --user -r requirements.txt && rm -f .netrc
 
 FROM registry.access.redhat.com/ubi9/python-312:latest
 

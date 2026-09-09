@@ -80,10 +80,14 @@ reporting `ok`, and `/api/config` returning service metadata.
 [`Containerfile`](Containerfile) builds a multi-stage image from
 `registry.access.redhat.com/ubi9/python-312:latest`:
 
-- The builder stage installs dependencies with `pip install --user`,
-  authenticating against the Lightwell index via a BuildKit `netrc` build
-  secret (`--mount=type=secret,id=netrc`) so credentials never land in an
-  image layer.
+- The builder stage runs as root and installs dependencies with
+  `pip install --user`, authenticating against the Lightwell index via a
+  `.netrc` copied into the build context and removed in the same `RUN`.
+  The builder stage is discarded by the multi-stage build, so credentials
+  never reach the final image.   (A BuildKit `netrc` build secret,
+  `--mount=type=secret,id=netrc`, would be preferable, but nested Podman
+  inside an AAP Execution Environment cannot satisfy the `setgroups()` call
+  that secret mounts trigger -- see `CHANGELOG.md`.)
 - The runtime stage copies the installed packages and app code, runs as
   non-root `USER 1001`, exposes port `8080`, and serves via
   `gunicorn --bind 0.0.0.0:8080 --workers 2 app:app`.
