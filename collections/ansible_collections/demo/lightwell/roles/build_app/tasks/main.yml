@@ -61,6 +61,18 @@
         target_names:
           - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest"
 
+    # registry_auth_file (from the Container Registry credential) is only
+    # readable on the controller/execution environment, not the remote
+    # build host running this task, so its contents are copied over rather
+    # than referencing the path directly.
+    - name: Write the registry auth file to the build host
+      when: registry_auth_file is defined
+      no_log: true
+      ansible.builtin.copy:
+        dest: "{{ remote_build_dir.path }}/.registry-auth.json"
+        content: "{{ lookup('file', registry_auth_file) }}"
+        mode: "0600"
+
     - name: Push the built image(s) to the registry
       when: app_image_push | bool
       loop:
@@ -70,7 +82,7 @@
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ item }}"
         push: true
-        auth_file: "{{ registry_auth_file | default(omit) }}"
+        auth_file: "{{ (remote_build_dir.path + '/.registry-auth.json') if registry_auth_file is defined else omit }}"
   always:
     - name: Remove the remote build directory
       when: remote_build_dir is defined and remote_build_dir.path is defined

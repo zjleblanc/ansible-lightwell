@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-09 — Fix registry auth file path not existing on remote hosts
+
+### Fixed
+
+- `demo.lightwell.build_app`'s push task and `demo.lightwell.deploy_app`'s
+  pull task no longer pass `registry_auth_file` straight through as
+  `auth_file`. That path is only valid on the controller/execution
+  environment where AAP's Container Registry credential injector wrote
+  it (e.g. via `tower.filename`), not on the remote `rhlw` host the
+  `podman_image` task actually runs on, causing `credential file is not
+  accessible: faccessat ... no such file or directory`. Both roles now
+  read the file's contents on the controller via `lookup('file',
+  registry_auth_file)` and copy them to a path on the remote host
+  (`build_app`'s existing temporary build directory, or a new
+  `ansible.builtin.tempfile` in `deploy_app` cleaned up in `always`),
+  then point `auth_file` at that remote copy.
+- Updated the `build_app`/`deploy_app` role `README.md` files to note
+  that `registry_auth_file` is a controller-side path whose contents get
+  copied to the remote host.
+
 ## 2026-09-09 — Switch registry auth to auth_file instead of username/password
 
 ### Changed

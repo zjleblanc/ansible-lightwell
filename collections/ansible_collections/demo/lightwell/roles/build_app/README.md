@@ -38,7 +38,7 @@ it's used to compute the `<environment>-latest` convenience tag.
 
 | Variable | Description |
 | --- | --- |
-| `registry_auth_file` | Path to a podman/docker `auth.json`-format file with credentials for pushing to a private registry (e.g. sourced from AAP's built-in **Container Registry** credential type). |
+| `registry_auth_file` | Path, on the controller/execution environment, to a podman/docker `auth.json`-format file with credentials for pushing to a private registry (e.g. sourced from AAP's built-in **Container Registry** credential type). Its contents are copied to the build host, since that path isn't reachable from there directly. |
 
 ## Example
 
