@@ -76,29 +76,31 @@
           password {{ lightwell_password }}
         mode: "0600"
 
-    - name: Create a Podman wrapper that ignores chown errors on unpack
-      register: podman_wrapper_file
+    - name: Create a temporary storage.conf to ignore chown errors
+      register: chown_storage_conf
       ansible.builtin.tempfile:
         state: file
-        suffix: -lightwell-podman
+        suffix: -lightwell-storage.conf
 
-    - name: Write the Podman wrapper script
+    - name: Write ignore_chown_errors into the temporary storage.conf
       ansible.builtin.copy:
-        dest: "{{ podman_wrapper_file.path }}"
-        mode: "0755"
+        dest: "{{ chown_storage_conf.path }}"
+        mode: "0644"
         content: |
-          #!/bin/sh
-          exec podman --storage-opt ignore_chown_errors=true "$@"
+          [storage]
+          [storage.options]
+          ignore_chown_errors = "true"
 
     - name: Build the application container image
       register: build_result
       environment:
         BUILDAH_ISOLATION: chroot
+        CONTAINERS_STORAGE_CONF: "{{ chown_storage_conf.path }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ ansible_user_uid | default(0) }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ app_image_tag }}"
         path: "{{ app_source_dir }}"
-        executable: "{{ podman_wrapper_file.path }}"
         build:
           file: Containerfile
           force_rm: true
@@ -111,10 +113,10 @@
         path: "{{ lightwell_netrc_file.path }}"
         state: absent
 
-    - name: Remove the temporary Podman wrapper
-      when: podman_wrapper_file is defined and podman_wrapper_file.path is defined
+    - name: Remove the temporary storage.conf
+      when: chown_storage_conf is defined and chown_storage_conf.path is defined
       ansible.builtin.file:
-        path: "{{ podman_wrapper_file.path }}"
+        path: "{{ chown_storage_conf.path }}"
         state: absent
 
 - name: Tag the image for the target environment

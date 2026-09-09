@@ -9,9 +9,6 @@ Before deploying, it records the currently running image reference to
 
 | Variable | Description |
 | --- | --- |
-| `app_image_registry` | Registry/namespace the image was pushed to by `build_app`. |
-| `app_image_name` | Image repository name. |
-| `app_image_tag` | Tag to deploy (typically the git commit SHA built by `build_app`). |
 | `app_environment` | `test` or `prod`; used for logging and health check behavior. |
 
 ## Common variables (see `defaults/main.yml`)
@@ -22,6 +19,9 @@ Before deploying, it records the currently running image reference to
 | `app_host_port` | `8080` | Host port mapped to the container's port 8080. |
 | `app_previous_image_file` | `/opt/lightwell-demo/previous_image.txt` | Where the previous image reference is persisted for rollback. |
 | `manage_systemd_unit` | `true` | Whether to generate and enable a systemd unit for the container. |
+| `app_image_registry` | `quay.io/zleblanc` | Registry/namespace the image was pushed to by `build_app`. Mirrored here so this role doesn't depend on `group_vars` being applied. |
+| `app_image_name` | `lightwell-patch-demo-app` | Image repository name. |
+| `app_image_tag` | `{{ app_git_sha \| default('dev') }}` | Tag to deploy (typically the git commit SHA built by `build_app`). |
 
 ## Optional variables
 
