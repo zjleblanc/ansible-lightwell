@@ -10,6 +10,12 @@
   ansible.builtin.command:
     cmd: whoami
 
+- name: Detect the numeric UID for rootless Podman
+  register: build_user_id
+  changed_when: false
+  ansible.builtin.command:
+    cmd: id -u
+
 - name: Ensure subordinate ID mappings for rootless Podman
   block:
     - name: Ensure /etc/subuid has a subordinate UID range for the build user
@@ -91,12 +97,20 @@
           [storage.options]
           ignore_chown_errors = "true"
 
+    - name: Ensure XDG_RUNTIME_DIR exists for Podman
+      become: true
+      ansible.builtin.file:
+        path: "/run/user/{{ build_user_id.stdout }}"
+        state: directory
+        owner: "{{ build_user_whoami.stdout }}"
+        mode: "0700"
+
     - name: Build the application container image
       register: build_result
       environment:
         BUILDAH_ISOLATION: chroot
         CONTAINERS_STORAGE_CONF: "{{ chown_storage_conf.path }}"
-        XDG_RUNTIME_DIR: "/run/user/{{ ansible_user_uid | default(0) }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ build_user_id.stdout }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ app_image_tag }}"
