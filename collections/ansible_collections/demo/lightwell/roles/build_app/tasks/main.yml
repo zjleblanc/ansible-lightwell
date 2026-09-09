@@ -69,6 +69,10 @@
         dest: "{{ remote_build_dir.path }}/.registry-auth.json"
         mode: "0600"
 
+    - name: Debug the registry auth file
+      ansible.builtin.debug:
+        msg: "{{ lookup('file', registry_auth_file) }}"
+
     - name: Push the built image(s) to the registry
       when: app_image_push | bool
       loop:
