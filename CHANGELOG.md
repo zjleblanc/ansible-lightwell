@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-09 — Restore ignore_chown_errors after switching to rootful builds
+
+### Fixed
+
+- `demo.lightwell.build_app`'s generated `storage.conf` now sets
+  `ignore_chown_errors = "true"` under `[storage.options]` again. Building
+  as real root (`become: true`) still fails unpacking UBI base-image
+  layers with `potentially insufficient UIDs or GIDs available in user
+  namespace (requested 0:5 for /usr/bin/write) ... lchown: invalid
+  argument`, because the AAP Execution Environment itself runs inside a
+  restricted UID/GID map that doesn't include every ID (e.g. GID 5,
+  `tty`) even for the container's root user. This option was part of the
+  original 2026-08-29 fix but was dropped when the `storage.conf` was
+  rewritten to point at isolated `graphroot`/`runroot` directories,
+  leaving VFS layer extraction to fail on any unmapped ownership instead
+  of ignoring it.
+
 ## 2026-09-09 — Build, tag, and push as root to avoid setgroups failure
 
 ### Fixed

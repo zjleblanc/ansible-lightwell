@@ -66,6 +66,9 @@
           graphroot = "{{ podman_build_storage.path }}"
           runroot = "{{ podman_build_runroot.path }}"
 
+          [storage.options]
+          ignore_chown_errors = "true"
+
     - name: Build the application container image
       become: true
       register: build_result
