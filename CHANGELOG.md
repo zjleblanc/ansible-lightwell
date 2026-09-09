@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-09 — Drop Podman build secret to avoid setgroups failure
+
+### Fixed
+
+- The application `Containerfile` no longer authenticates via
+  `--mount=type=secret,id=netrc`; `demo.lightwell.build_app` now writes
+  the `.netrc` directly into the build context (`{{ app_source_dir
+  }}/.netrc`) and the Containerfile removes it within the same `RUN` that
+  installs dependencies. The secret-mount path triggers the same
+  `setgroups()` call that nested Podman inside an AAP Execution
+  Environment cannot satisfy, independent of the `USER 0` change below --
+  builds still failed with
+  `error setting supplemental groups list: operation not permitted` at
+  the `pip install` step even after that fix. Credentials still never
+  reach the pushed image because the builder stage that holds them is
+  discarded by the multi-stage build; `build_app`'s `always` block
+  removes the on-disk `.netrc` regardless of build outcome.
+- `extra_args` for the `podman_image` build task dropped the
+  `--secret id=netrc,src=...` flag, keeping only `--isolation chroot`.
+
 ## 2026-09-09 — Build application image as root to avoid setgroups failure
 
 ### Fixed
