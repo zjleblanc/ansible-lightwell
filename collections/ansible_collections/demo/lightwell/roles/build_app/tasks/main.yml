@@ -1,5 +1,6 @@
 ---
 - name: Ensure application source directory exists on the controller
+  delegate_to: localhost
   register: app_source_stat
   ansible.builtin.stat:
     path: "{{ app_source_dir }}"
