@@ -1,4 +1,12 @@
 ---
+- name: Ensure build dependencies are installed
+  become: true
+  ansible.builtin.dnf:
+    name:
+      - podman
+      - rsync
+    state: present
+
 - name: Ensure application source directory exists on the controller
   delegate_to: localhost
   register: app_source_stat
