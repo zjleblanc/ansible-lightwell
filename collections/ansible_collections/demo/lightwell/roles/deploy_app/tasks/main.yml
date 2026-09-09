@@ -42,7 +42,7 @@
 
     - name: Write the registry auth file to the target host
       when: registry_auth_file is defined
-      no_log: true
+      no_log: "{{ deploy_app_no_log }}"
       ansible.builtin.copy:
         dest: "{{ registry_auth_tempfile.path }}"
         content: "{{ lookup('file', registry_auth_file) }}"
