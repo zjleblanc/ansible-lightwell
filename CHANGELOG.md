@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-09 — Build, tag, and push as root to avoid setgroups failure
+
+### Fixed
+
+- `demo.lightwell.build_app` now builds, tags, and pushes the application
+  image with `become: true` (real root) instead of rootless Podman. A
+  plain `RUN pip install ...` (no secret mount, `USER 0` already in
+  effect) still failed with
+  `error setting supplemental groups list: operation not permitted`,
+  proving the earlier fixes were addressing symptoms of a deeper problem:
+  Buildah's `chroot` isolation calls `setgroups()` unconditionally before
+  every `RUN` instruction, and the kernel automatically denies that
+  syscall in any unprivileged user namespace lacking a real subordinate
+  UID/GID mapping -- exactly the single-ID rootless fallback this role
+  intentionally forces (see the "Stop configuring subordinate IDs" entry
+  below) to dodge the earlier `newuidmap` failure. This is a known
+  Buildah bug fixed upstream in 1.45.0
+  (<https://github.com/containers/buildah/pull/6961>), not available in
+  this Execution Environment. Real root has no user-namespace restriction
+  and genuine `CAP_SETGID`, so `setgroups()` succeeds.
+- The now-removed subordinate-ID cleanup and `XDG_RUNTIME_DIR` setup
+  (both rootless-only concerns) were dropped from `build_app` as dead
+  code once builds run as root.
+- The "tag" and "push" tasks now also set `CONTAINERS_STORAGE_CONF` to
+  the same isolated `storage.conf` as the build task and run with
+  `become: true`, fixing a latent bug where they previously read Podman's
+  default (rootless) storage and would never have found an image built
+  into the isolated root-owned graphroot.
+
 ## 2026-09-09 — Drop Podman build secret to avoid setgroups failure
 
 ### Fixed

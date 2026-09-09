@@ -10,6 +10,14 @@ context at all, but nested Podman inside an AAP Execution Environment
 cannot satisfy the `setgroups()` call that secret mounts trigger -- see
 `CHANGELOG.md`.
 
+Builds, tags, and pushes the image as root (`become: true`) rather than as
+rootless Podman: nested Podman inside an AAP Execution Environment can't
+complete a rootless build here (no `newuidmap`/`newgidmap` capability, and
+the rootless fallback's user namespace denies `setgroups()`, which older
+Buildah releases call unconditionally under `--isolation chroot`). This
+role therefore requires privilege escalation to be available on the host
+running the build.
+
 ## Required variables
 
 | Variable | Description |
