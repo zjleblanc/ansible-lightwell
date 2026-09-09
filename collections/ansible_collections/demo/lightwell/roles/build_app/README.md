@@ -34,6 +34,12 @@ build).
 `app_environment` (e.g. `test` or `prod`) must be supplied by the caller;
 it's used to compute the `<environment>-latest` convenience tag.
 
+## Optional variables
+
+| Variable | Description |
+| --- | --- |
+| `registry_auth_file` | Path to a podman/docker `auth.json`-format file with credentials for pushing to a private registry (e.g. sourced from AAP's built-in **Container Registry** credential type). |
+
 ## Example
 
 ```yaml

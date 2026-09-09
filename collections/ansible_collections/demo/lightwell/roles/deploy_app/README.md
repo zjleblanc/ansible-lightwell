@@ -27,4 +27,4 @@ Before deploying, it records the currently running image reference to
 
 | Variable | Description |
 | --- | --- |
-| `registry_username` / `registry_password` | Credentials for pulling from a private registry. |
+| `registry_auth_file` | Path to a podman/docker `auth.json`-format file with credentials for pulling from a private registry. |

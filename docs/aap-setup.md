@@ -158,9 +158,10 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
 
 - Type: **Container Registry**
 - Only needed if `quay.io/lightwell-demo` (or your chosen registry) requires
-  authentication for pulls on the target hosts. Exposed to the
-  `demo.lightwell.deploy_app` role as `registry_username` /
-  `registry_password`.
+  authentication. Exposed as `registry_auth_file` (path to a podman/docker
+  `auth.json`-format file) to the `demo.lightwell.build_app` role (for
+  pushes) and the `demo.lightwell.deploy_app` role (for pulls on the
+  target hosts).
 
 ### 1e. Controller API Credential (for the Rulebook Activation)
 
@@ -210,7 +211,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Inventory | `lightwell-demo` |
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/deploy.yml` |
-| Credentials | Lightwell Demo Service Account, Machine, Lightwell GitHub Status Reporter |
+| Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
 | Limit | `rhlw` |
 | Source Control Branch/Tag/Commit override | Prompt on launch (so PR builds check out the PR head SHA) |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: test`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |

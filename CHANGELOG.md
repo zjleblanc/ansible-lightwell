@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-09 — Switch registry auth to auth_file instead of username/password
+
+### Changed
+
+- `demo.lightwell.build_app`'s push task and `demo.lightwell.deploy_app`'s
+  pull task (both `containers.podman.podman_image`) now accept
+  `auth_file: "{{ registry_auth_file | default(omit) }}"`, sourcing
+  registry authentication from a pre-existing podman/docker
+  `auth.json`-format file instead of discrete `registry_username` /
+  `registry_password` credential fields.
+- `docs/aap-setup.md` and the `build_app`/`deploy_app` role `README.md`
+  files now document the `registry_auth_file` variable in place of
+  `registry_username`/`registry_password`, and the "Lightwell - Build &
+  Test" job template's credential list now includes the optional
+  Container Registry credential, since `build_app` can also push.
+
+### Removed
+
+- The explicit `containers.podman.podman_login` task in
+  `demo.lightwell.deploy_app`; authenticating via an auth file makes a
+  separate login step unnecessary.
+
 ## 2026-09-09 — Simplify build and deploy onto a single provided RHEL host
 
 ### Changed
