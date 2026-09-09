@@ -9,20 +9,20 @@ WORKDIR /opt/app-root/src
 
 COPY requirements.txt .netrc ./
 
-RUN pip install --no-cache-dir --user -r requirements.txt && rm -f .netrc
+RUN pip install --no-cache-dir -r requirements.txt && rm -f .netrc
 
 FROM registry.access.redhat.com/ubi9/python-312:latest
 
 WORKDIR /opt/app-root/src
 
-COPY --from=builder /opt/app-root/.local /opt/app-root/src/.local
+COPY --from=builder /opt/app-root/lib /opt/app-root/lib
+COPY --from=builder /opt/app-root/bin /opt/app-root/bin
 COPY app.py ./
 COPY templates/ templates/
 COPY static/ static/
 COPY config/ config/
 
-ENV PATH="/opt/app-root/src/.local/bin:${PATH}" \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
     PORT=8080
 
 EXPOSE 8080
