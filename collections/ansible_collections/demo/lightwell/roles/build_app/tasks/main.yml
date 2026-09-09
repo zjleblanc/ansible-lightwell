@@ -82,6 +82,18 @@
           password {{ lightwell_password }}
         mode: "0600"
 
+    - name: Create isolated storage directories for the build
+      register: podman_build_storage
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: -lightwell-podman-storage
+
+    - name: Create isolated runroot directory for the build
+      register: podman_build_runroot
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: -lightwell-podman-runroot
+
     - name: Create a temporary storage.conf to ignore chown errors
       register: chown_storage_conf
       ansible.builtin.tempfile:
@@ -95,6 +107,8 @@
         content: |
           [storage]
           driver = "vfs"
+          graphroot = "{{ podman_build_storage.path }}"
+          runroot = "{{ podman_build_runroot.path }}"
           [storage.options]
           ignore_chown_errors = "true"
 
@@ -132,6 +146,18 @@
       when: chown_storage_conf is defined and chown_storage_conf.path is defined
       ansible.builtin.file:
         path: "{{ chown_storage_conf.path }}"
+        state: absent
+
+    - name: Remove the isolated storage directory
+      when: podman_build_storage is defined and podman_build_storage.path is defined
+      ansible.builtin.file:
+        path: "{{ podman_build_storage.path }}"
+        state: absent
+
+    - name: Remove the isolated runroot directory
+      when: podman_build_runroot is defined and podman_build_runroot.path is defined
+      ansible.builtin.file:
+        path: "{{ podman_build_runroot.path }}"
         state: absent
 
 - name: Tag the image for the target environment

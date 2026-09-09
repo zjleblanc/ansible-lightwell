@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-09 — Fix VFS driver override causing newuidmap failure
+
+### Fixed
+
+- `demo.lightwell.build_app` now points the temporary build `storage.conf`
+  at fresh, isolated `graphroot`/`runroot` directories instead of the
+  default storage path. Previously, Podman found a pre-existing `overlay`
+  storage database at the default path and silently overwrote the
+  role's `driver = "vfs"` setting back to `overlay`
+  (`User-selected graph driver "vfs" overwritten by graph driver
+  "overlay" from database`), which then required user-namespace UID
+  mapping that fails inside AAP Execution Environments
+  (`newuidmap: write to uid_map failed: Operation not permitted`). With
+  no pre-existing database in the isolated directories, the VFS driver
+  now takes effect and namespace mapping is never attempted.
+
 ## 2026-09-09 — Report failure status instead of hanging pending on hard errors
 
 ### Fixed
