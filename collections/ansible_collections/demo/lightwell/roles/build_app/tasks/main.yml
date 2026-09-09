@@ -70,6 +70,7 @@
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ item }}"
         push: true
+        auth_file: "{{ registry_auth_file | default(omit) }}"
   always:
     - name: Remove the remote build directory
       when: remote_build_dir is defined and remote_build_dir.path is defined

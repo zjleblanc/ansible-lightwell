@@ -6,16 +6,6 @@
     state: directory
     mode: "0755"
 
-- name: Log in to the container registry
-  when:
-    - registry_username is defined
-    - registry_password is defined
-  no_log: true
-  containers.podman.podman_login:
-    username: "{{ registry_username }}"
-    password: "{{ registry_password }}"
-    registry: "{{ app_image_registry.split('/')[0] }}"
-
 - name: Capture the currently running container, if any
   register: current_container_info
   failed_when: false
@@ -42,6 +32,7 @@
     name: "{{ app_image_registry }}/{{ app_image_name }}"
     tag: "{{ app_image_tag }}"
     pull: true
+    auth_file: "{{ registry_auth_file | default(omit) }}"
 
 - name: Deploy the application container
   register: deploy_result
