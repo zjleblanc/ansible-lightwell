@@ -1,55 +1,13 @@
 ---
-# Nested Podman (e.g. inside an AAP Execution Environment) often cannot map
-# every UID/GID from a base image into the available user namespace, and the
-# nested environment typically lacks the capabilities newuidmap/newgidmap
-# need to configure a full subordinate ID range. Ensure no subordinate ID
-# range is configured for the build user so Podman falls back to its
-# single-ID rootless mapping (no newuidmap/newgidmap call), then tolerate
-# the resulting chown failures and use chroot isolation so pulls/builds can
-# proceed.
-
-- name: Detect the current build user for rootless Podman
-  register: build_user_whoami
-  changed_when: false
-  ansible.builtin.command:
-    cmd: whoami
-
-- name: Detect the numeric UID for rootless Podman
-  register: build_user_id
-  changed_when: false
-  ansible.builtin.command:
-    cmd: id -u
-
-- name: Ensure no subordinate ID mappings force Podman into newuidmap
-  block:
-    - name: Remove any subordinate UID range for the build user
-      register: subuid_entry
-      become: true
-      ansible.builtin.lineinfile:
-        path: /etc/subuid
-        regexp: "^{{ build_user_whoami.stdout }}:"
-        state: absent
-
-    - name: Remove any subordinate GID range for the build user
-      register: subgid_entry
-      become: true
-      ansible.builtin.lineinfile:
-        path: /etc/subgid
-        regexp: "^{{ build_user_whoami.stdout }}:"
-        state: absent
-
-    - name: Migrate Podman storage after subordinate ID ranges change
-      when: subuid_entry is changed or subgid_entry is changed
-      changed_when: true
-      ansible.builtin.command:
-        cmd: podman system migrate
-  rescue:
-    - name: Continue when subordinate ID cleanup is unavailable
-      ansible.builtin.debug:
-        msg: >-
-          Could not remove /etc/subuid or /etc/subgid entries
-          ({{ ansible_failed_result.msg | default('privilege escalation unavailable') }}).
-          Continuing with ignore_chown_errors for nested builds.
+# Nested Podman (e.g. inside an AAP Execution Environment) cannot complete a
+# rootless build here: it lacks the newuidmap/newgidmap capabilities for a
+# full subordinate-ID mapping, and even the single-ID rootless fallback runs
+# in a user namespace where the kernel denies setgroups(). Buildah's chroot
+# isolation calls setgroups() unconditionally in versions before 1.45.0
+# ("error setting supplemental groups list: operation not permitted"),
+# which is older than what ships in this EE. Build, tag, and push as real
+# root via `become` instead, which needs neither a subordinate-ID mapping
+# nor setgroups() to succeed.
 
 - name: Ensure application source directory exists on the build host
   register: app_source_stat
@@ -64,7 +22,7 @@
       expects to run against a checkout of the ansible-lightwell repository
       (e.g. the AAP project working directory).
 
-- name: Build the application image with Lightwell auth and nested-Podman workarounds
+- name: Build, tag, and push the application image with Lightwell auth
   block:
     - name: Determine the build-context netrc path
       ansible.builtin.set_fact:
@@ -92,38 +50,28 @@
         state: directory
         suffix: -lightwell-podman-runroot
 
-    - name: Create a temporary storage.conf to ignore chown errors
-      register: chown_storage_conf
+    - name: Create a temporary storage.conf pointed at the isolated directories
+      register: podman_storage_conf
       ansible.builtin.tempfile:
         state: file
         suffix: -lightwell-storage.conf
 
-    - name: Write ignore_chown_errors into the temporary storage.conf
+    - name: Write the isolated storage.conf
       ansible.builtin.copy:
-        dest: "{{ chown_storage_conf.path }}"
+        dest: "{{ podman_storage_conf.path }}"
         mode: "0644"
         content: |
           [storage]
           driver = "vfs"
           graphroot = "{{ podman_build_storage.path }}"
           runroot = "{{ podman_build_runroot.path }}"
-          [storage.options]
-          ignore_chown_errors = "true"
-
-    - name: Ensure XDG_RUNTIME_DIR exists for Podman
-      become: true
-      ansible.builtin.file:
-        path: "/run/user/{{ build_user_id.stdout }}"
-        state: directory
-        owner: "{{ build_user_whoami.stdout }}"
-        mode: "0700"
 
     - name: Build the application container image
+      become: true
       register: build_result
       environment:
         BUILDAH_ISOLATION: chroot
-        CONTAINERS_STORAGE_CONF: "{{ chown_storage_conf.path }}"
-        XDG_RUNTIME_DIR: "/run/user/{{ build_user_id.stdout }}"
+        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ app_image_tag }}"
@@ -132,6 +80,28 @@
           file: Containerfile
           force_rm: true
           extra_args: "--isolation chroot"
+
+    - name: Tag the image for the target environment
+      become: true
+      environment:
+        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
+      containers.podman.podman_tag:
+        image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
+        target_names:
+          - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest"
+
+    - name: Push the built image(s) to the registry
+      when: app_image_push | bool
+      become: true
+      loop:
+        - "{{ app_image_tag }}"
+        - "{{ app_environment }}-latest"
+      environment:
+        CONTAINERS_STORAGE_CONF: "{{ podman_storage_conf.path }}"
+      containers.podman.podman_image:
+        name: "{{ app_image_registry }}/{{ app_image_name }}"
+        tag: "{{ item }}"
+        push: true
   always:
     - name: Remove the build-context netrc file
       when: lightwell_netrc_path is defined
@@ -141,35 +111,21 @@
         state: absent
 
     - name: Remove the temporary storage.conf
-      when: chown_storage_conf is defined and chown_storage_conf.path is defined
+      when: podman_storage_conf is defined and podman_storage_conf.path is defined
       ansible.builtin.file:
-        path: "{{ chown_storage_conf.path }}"
+        path: "{{ podman_storage_conf.path }}"
         state: absent
 
     - name: Remove the isolated storage directory
       when: podman_build_storage is defined and podman_build_storage.path is defined
+      become: true
       ansible.builtin.file:
         path: "{{ podman_build_storage.path }}"
         state: absent
 
     - name: Remove the isolated runroot directory
       when: podman_build_runroot is defined and podman_build_runroot.path is defined
+      become: true
       ansible.builtin.file:
         path: "{{ podman_build_runroot.path }}"
         state: absent
-
-- name: Tag the image for the target environment
-  containers.podman.podman_tag:
-    image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
-    target_names:
-      - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest"
-
-- name: Push the built image(s) to the registry
-  when: app_image_push | bool
-  loop:
-    - "{{ app_image_tag }}"
-    - "{{ app_environment }}-latest"
-  containers.podman.podman_image:
-    name: "{{ app_image_registry }}/{{ app_image_name }}"
-    tag: "{{ item }}"
-    push: true
