@@ -1,0 +1,54 @@
+---
+description: Always report a terminal GitHub status after posting pending, even on hard failures
+globs: playbooks/**/*.yml
+alwaysApply: false
+---
+
+# Always Report a Terminal GitHub Status
+
+Any play that posts a `pending` status via `demo.lightwell.report_status` must
+guarantee a terminal `success`/`failure` status gets posted too, even when a
+step fails with an unhandled task error (not just an expected/graceful
+failure condition). Otherwise the GitHub commit/PR check hangs on `pending`
+forever.
+
+Wrap the risky steps (build, deploy, health check, rollback, etc.) in a
+`block`/`rescue`/`always`:
+
+- `rescue` catches hard task failures and records a failure fact (e.g.
+  `health_check_passed: false`, plus a short `*_failure_reason` for the
+  status description). Don't put secrets or raw error text in the reason --
+  it's posted to a public GitHub status.
+- `always` (or a step immediately after the block) posts the final status
+  and re-raises/fails so the AAP job itself is also marked failed, not just
+  the GitHub check.
+
+## Example
+
+```yaml
+- name: Deploy, verify, and roll back the application
+  block:
+    - name: Deploy the application
+      ansible.builtin.include_role:
+        name: demo.lightwell.deploy_app
+    - name: Run the post-deploy health check
+      ansible.builtin.include_role:
+        name: demo.lightwell.health_check
+  rescue:
+    - name: Record that deployment failed unexpectedly
+      ansible.builtin.set_fact:
+        health_check_passed: false
+        deploy_failure_reason: "failed unexpectedly -- see AAP job output for details"
+  always:
+    - name: Report the final GitHub status check result
+      vars:
+        github_status_state: "{{ 'success' if health_check_passed else 'failure' }}"
+        github_status_description: "{{ deploy_failure_reason | default('...') }}"
+      ansible.builtin.include_role:
+        name: demo.lightwell.report_status
+```
+
+When referencing facts inside the `always`/status-description Jinja
+expression that are normally set earlier in the `block` (e.g.
+`initial_health_check_passed`), guard them with `| default(...)` since
+`rescue` may trigger before they're ever assigned.

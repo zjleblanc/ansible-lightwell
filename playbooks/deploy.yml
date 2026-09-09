@@ -44,8 +44,23 @@
 
     - name: Build the application image (Test only)
       when: app_environment == 'test'
-      ansible.builtin.include_role:
-        name: demo.lightwell.build_app
+      block:
+        - name: Build the application image
+          ansible.builtin.include_role:
+            name: demo.lightwell.build_app
+      rescue:
+        - name: Report the build failure to GitHub so the check does not hang pending
+          vars:
+            github_status_state: failure
+            github_status_description: "Build failed for {{ app_environment }} -- see AAP job output for details"
+          ansible.builtin.include_role:
+            name: demo.lightwell.report_status
+
+        - name: Re-raise the build failure so the AAP job is marked failed
+          ansible.builtin.fail:
+            msg: >-
+              Build failed for {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.
+              See the task output above for the underlying error.
 
 - name: Deploy and verify the Lightwell demo application
   hosts: "{{ ('env_' ~ app_environment) if app_environment is defined else omit }}"
@@ -89,45 +104,58 @@
       ansible.builtin.include_role:
         name: demo.lightwell.report_status
 
-  roles:
-    - name: Deploy the application
-      role: demo.lightwell.deploy_app
-
   tasks:
-    - name: Run the post-deploy health check
-      vars:
-        health_check_strict: "{{ true if app_environment == 'test' else false }}"
-      ansible.builtin.include_role:
-        name: demo.lightwell.health_check
+    - name: Deploy, verify, and roll back the application
+      block:
+        - name: Deploy the application
+          ansible.builtin.include_role:
+            name: demo.lightwell.deploy_app
 
-    - name: Record the initial deployment health result
-      ansible.builtin.set_fact:
-        initial_health_check_passed: "{{ health_check_passed }}"
+        - name: Run the post-deploy health check
+          vars:
+            health_check_strict: "{{ true if app_environment == 'test' else false }}"
+          ansible.builtin.include_role:
+            name: demo.lightwell.health_check
 
-    - name: Roll back automatically when the initial health check fails (Prod only)
-      when:
-        - app_environment == 'prod'
-        - not initial_health_check_passed
-      ansible.builtin.include_role:
-        name: demo.lightwell.rollback
+        - name: Record the initial deployment health result
+          ansible.builtin.set_fact:
+            initial_health_check_passed: "{{ health_check_passed }}"
 
-    - name: Report the final GitHub status check result
-      vars:
-        github_status_state: "{{ 'success' if health_check_passed else 'failure' }}"
-        github_status_description: >-
-          {{ app_environment | capitalize }} deployment {{ 'healthy' if health_check_passed
-             else ('failed -- rolled back' if (app_environment == 'prod' and not initial_health_check_passed and rollback_image is defined)
-                   else 'failed health checks') }}
-      ansible.builtin.include_role:
-        name: demo.lightwell.report_status
+        - name: Roll back automatically when the initial health check fails (Prod only)
+          when:
+            - app_environment == 'prod'
+            - not initial_health_check_passed
+          ansible.builtin.include_role:
+            name: demo.lightwell.rollback
+      rescue:
+        # Catches hard task failures (e.g. deploy_app/health_check/rollback errors),
+        # as distinct from a graceful health_check_passed=false, so the GitHub
+        # check always gets a final status instead of hanging as pending.
+        - name: Record that deployment failed unexpectedly
+          ansible.builtin.set_fact:
+            health_check_passed: false
+            deploy_failure_reason: "failed unexpectedly -- see AAP job output for details"
+      always:
+        - name: Report the final GitHub status check result
+          vars:
+            github_status_state: "{{ 'success' if health_check_passed else 'failure' }}"
+            github_status_description: >-
+              {{ app_environment | capitalize }} deployment {{ 'healthy' if health_check_passed
+                 else (deploy_failure_reason | default(
+                   'failed -- rolled back' if (app_environment == 'prod' and not (initial_health_check_passed | default(true)) and rollback_image is defined)
+                   else 'failed health checks')) }}
+          ansible.builtin.include_role:
+            name: demo.lightwell.report_status
 
-    - name: Surface the outcome for AAP job output
-      ansible.builtin.debug:
-        msg: >-
-          {{ app_environment | capitalize }} deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
-          for image {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.
+        - name: Surface the outcome for AAP job output
+          ansible.builtin.debug:
+            msg: >-
+              {{ app_environment | capitalize }} deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
+              for image {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.
 
     - name: Fail the play if unhealthy after any rollback attempt
       when: not health_check_passed
       ansible.builtin.fail:
-        msg: "{{ app_environment | capitalize }} deployment failed health checks."
+        msg: >-
+          {{ app_environment | capitalize }} deployment
+          {{ deploy_failure_reason | default('failed health checks') }}.

@@ -94,6 +94,7 @@
         mode: "0644"
         content: |
           [storage]
+          driver = "vfs"
           [storage.options]
           ignore_chown_errors = "true"
 
@@ -118,7 +119,7 @@
         build:
           file: Containerfile
           force_rm: true
-          extra_args: "--secret id=netrc,src={{ lightwell_netrc_file.path }}"
+          extra_args: "--isolation chroot --secret id=netrc,src={{ lightwell_netrc_file.path }}"
   always:
     - name: Remove the temporary netrc file
       when: lightwell_netrc_file is defined and lightwell_netrc_file.path is defined
