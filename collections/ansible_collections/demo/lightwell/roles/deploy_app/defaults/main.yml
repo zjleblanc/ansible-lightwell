@@ -15,3 +15,6 @@ manage_systemd_unit: true
 app_image_registry: quay.io/zleblanc
 app_image_name: lightwell-patch-demo-app
 app_image_tag: "{{ app_git_sha | default('dev') }}"
+
+# Set to false to disable no_log on credential-writing tasks for troubleshooting.
+deploy_app_no_log: true

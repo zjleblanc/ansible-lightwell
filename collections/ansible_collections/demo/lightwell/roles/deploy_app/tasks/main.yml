@@ -27,10 +27,6 @@
     content: "{{ previous_app_image }}"
     mode: "0644"
 
-# registry_auth_file (from the Container Registry credential) is only
-# readable on the controller/execution environment, not the target host
-# running this task, so its contents are copied over rather than
-# referencing the path directly.
 - name: Pull the target application image, authenticating via the registry auth file if provided
   block:
     - name: Create a temporary file for the registry auth file on the target host
@@ -42,10 +38,10 @@
 
     - name: Write the registry auth file to the target host
       when: registry_auth_file is defined
-      no_log: true
+      no_log: "{{ deploy_app_no_log }}"
       ansible.builtin.copy:
+        src: "{{ registry_auth_file }}"
         dest: "{{ registry_auth_tempfile.path }}"
-        content: "{{ lookup('file', registry_auth_file) }}"
         mode: "0600"
 
     - name: Pull the target application image
