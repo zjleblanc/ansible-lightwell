@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-09 — Make no_log overridable on credential-writing tasks
+
+### Changed
+
+- `demo.lightwell.build_app`: `no_log: true` on the netrc and registry
+  auth file copy tasks is now driven by `build_app_no_log` (default:
+  `true`). Set to `false` via extra vars to expose task output when
+  troubleshooting.
+- `demo.lightwell.deploy_app`: same pattern; `no_log: true` on the
+  registry auth file copy task is now controlled by `deploy_app_no_log`
+  (default: `true`).
+
 ## 2026-09-09 — Fix registry auth file path not existing on remote hosts
 
 ### Fixed
