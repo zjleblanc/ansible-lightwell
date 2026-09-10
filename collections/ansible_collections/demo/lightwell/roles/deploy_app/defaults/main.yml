@@ -1,12 +1,15 @@
 ---
-# Derived from app_environment so test and prod can be deployed to, and
+# Derived from app_environment so dev and prod can be deployed to, and
 # coexist on, the same host/group (each gets its own container, port, and
-# rollback state file).
-app_container_name: "lightwell-patch-demo-app-{{ app_environment }}"
-app_host_port: "{{ 8080 if app_environment == 'test' else 8081 }}"
+# rollback state file). Prod keeps the bare name; dev gets a "-dev" suffix.
+app_container_name: "lightwell-patch-demo-app{{ '-dev' if app_environment == 'dev' else '' }}"
+app_host_port: "{{ 8080 if app_environment == 'dev' else 8081 }}"
 app_previous_image_file: "/opt/lightwell-demo/{{ app_environment }}/previous_image.txt"
-systemd_unit_dir: /etc/systemd/system
-manage_systemd_unit: true
+
+# Quadlet file name defaults to the container name, so the generated
+# systemd service is named "{{ app_container_name }}.service".
+quadlet_dir: /etc/containers/systemd
+app_service_name: "{{ app_container_name }}"
 
 # Container image coordinates. Must match the values used by build_app,
 # since deploy_app runs in a separate play (and often against inventory

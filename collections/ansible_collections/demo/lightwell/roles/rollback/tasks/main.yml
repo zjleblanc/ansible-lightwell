@@ -18,23 +18,32 @@
   ansible.builtin.set_fact:
     rollback_image: "{{ previous_image_raw.content | b64decode | trim }}"
 
-- name: Stop the currently failing container
-  containers.podman.podman_container:
-    name: "{{ app_container_name }}"
-    state: stopped
-
-- name: Redeploy the previous known-good image
+- name: Rewrite the Quadlet container unit with the previous known-good image
+  become: true
   containers.podman.podman_container:
     name: "{{ app_container_name }}"
     image: "{{ rollback_image }}"
-    state: started
-    recreate: true
+    state: quadlet
+    quadlet_dir: "{{ quadlet_dir }}"
+    quadlet_options:
+      - "AutoUpdate=registry"
     ports:
       - "{{ app_host_port }}:8080"
-    restart_policy: always
     env:
       PORT: "8080"
       APP_ENVIRONMENT: "{{ app_environment }}"
+
+- name: Reload systemd so the Quadlet generator picks up the rolled-back unit
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart the service with the rolled-back image
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ app_service_name }}.service"
+    state: restarted
+    enabled: true
 
 - name: Re-run the health check against the rolled-back version
   vars:

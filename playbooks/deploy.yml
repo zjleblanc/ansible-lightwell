@@ -3,9 +3,9 @@
   hosts: rhlw
   gather_facts: false
   tasks:
-    - name: Check whether the PR touches app/ files (Test only)
+    - name: Check whether the PR touches app/ files (Dev only)
       when:
-        - app_environment == 'test'
+        - app_environment == 'dev'
         - github_token is defined
         - github_repo_full_name is defined
         - github_pr_number is defined
@@ -33,16 +33,16 @@
             - name: End play
               ansible.builtin.meta: end_play
 
-    - name: Mark the GitHub status check as pending (Test only)
-      when: app_environment == 'test'
+    - name: Mark the GitHub status check as pending (Dev only)
+      when: app_environment == 'dev'
       vars:
         github_status_state: pending
         github_status_description: "Building application image for {{ app_environment }}"
       ansible.builtin.include_role:
         name: demo.lightwell.report_status
 
-    - name: Build the application image (Test only)
-      when: app_environment == 'test'
+    - name: Build the application image (Dev only)
+      when: app_environment == 'dev'
       block:
         - name: Build the application image
           ansible.builtin.include_role:
@@ -112,7 +112,7 @@
 
         - name: Run the post-deploy health check
           vars:
-            health_check_strict: "{{ true if app_environment == 'test' else false }}"
+            health_check_strict: "{{ true if app_environment == 'dev' else false }}"
           ansible.builtin.include_role:
             name: demo.lightwell.health_check
 

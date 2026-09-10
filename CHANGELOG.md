@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-09-10 — Convert container deployment to Podman Quadlet and rename test to dev
+
+### Changed
+
+- `demo.lightwell.deploy_app` and `demo.lightwell.rollback` now write a
+  Podman Quadlet (`.container`) unit via `containers.podman.podman_container`
+  with `state: quadlet`, then `systemctl daemon-reload` and
+  restart/enable the generated `.service`, instead of starting the
+  container directly and calling the now-deprecated
+  `containers.podman.podman_generate_systemd`. That command fails outright
+  when the container doesn't already exist
+  (`Error: ... does not refer to a container or pod`), which is what
+  broke deployments. New role defaults: `quadlet_dir`
+  (`/etc/containers/systemd`) and `app_service_name`, replacing
+  `systemd_unit_dir`/`manage_systemd_unit`.
+- Renamed the `test` environment to `dev` across `playbooks/deploy.yml`,
+  `rulebooks/lightwell_webhook.yml`, and the `deploy_app`/`health_check`/
+  `rollback` role defaults. `app_container_name` now omits the suffix for
+  `prod` (`lightwell-patch-demo-app`) and appends `-dev` for `dev`
+  (`lightwell-patch-demo-app-dev`), still on port `8080` for `dev` and
+  `8081` for `prod`.
+- Updated `README.md`, `docs/aap-setup.md`, the `build_app`/`deploy_app`/
+  `health_check`/`rollback` role `README.md` files, and
+  `.cursor/rules/prefer-podman-collection.mdc` (which now documents the
+  Quadlet pattern in place of `podman_generate_systemd`) to reflect the
+  `dev`/`prod` naming and Quadlet-based deployment.
+
 ## 2026-09-09 — Fix registry auth file copy writing a path instead of file contents
 
 ### Fixed

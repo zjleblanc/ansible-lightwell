@@ -32,10 +32,10 @@ flowchart LR
 - An AAP instance (2.5+) with Event-Driven Ansible enabled, reachable from
   GitHub with a valid TLS certificate on its Event Stream endpoint.
 - A single Podman-capable RHEL host reachable over SSH (inventory group
-  `rhlw`) that both builds the image and hosts the `test` and `prod`
-  deployments. For this demo, `test` and `prod` run as separate
-  containers on separate ports (`8080`/`8081`) on that same host so they
-  don't collide.
+  `rhlw`) that both builds the image and hosts the `dev` and `prod`
+  deployments. For this demo, `dev` and `prod` run as separate
+  Quadlet-managed containers on separate ports (`8080`/`8081`) on that
+  same host so they don't collide.
 - A container registry the AAP execution environment can push to and the
   target hosts can pull from (default in this repo: `quay.io/lightwell-demo`).
 - A Lightwell Network service account (username in the form
@@ -194,7 +194,7 @@ repository URL so the rulebook is available to Rulebook Activations.
 - Add a single `rhlw` group containing the Podman host -- mirror
   `inventory/hosts.yml` in this repo, or import it directly as a
   source-controlled inventory pointed at the same project. This one host
-  is used for building the image and for both the `test` and `prod`
+  is used for building the image and for both the `dev` and `prod`
   deployments.
 - Attach the Machine credential from step 1c.
 
@@ -214,7 +214,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
 | Limit | `rhlw` |
 | Source Control Branch/Tag/Commit override | Prompt on launch (so PR builds check out the PR head SHA) |
-| Extra Variables | Prompt on launch (the rulebook supplies `app_environment: test`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
+| Extra Variables | Prompt on launch (the rulebook supplies `app_environment: dev`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
 ### 4b. Lightwell - Deploy Prod
 
@@ -235,7 +235,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/rollback.yml` |
 | Credentials | Machine |
-| Extra Variables | `target_environment` prompted on launch (`test` or `prod`) |
+| Extra Variables | `target_environment` prompted on launch (`dev` or `prod`) |
 
 No webhook or Event Stream needed -- this template is for on-demand manual
 rollback.
