@@ -1,6 +1,7 @@
 ---
 - name: Wait for the application container to report running
   register: health_container_info
+  become: true
   until: >-
     health_container_info.containers is defined and
     health_container_info.containers | length > 0 and
