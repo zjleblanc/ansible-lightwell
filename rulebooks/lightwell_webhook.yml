@@ -29,7 +29,8 @@
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
         (event.payload.deleted is not defined or event.payload.deleted == false) and
-        event.payload.after is defined
+        event.payload.head_commit.committer.username is defined and
+        event.payload.head_commit.committer.username == "web-flow"
       action:
         run_job_template:
           name: Lightwell // Deploy Prod
