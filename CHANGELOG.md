@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-10 — Refine deployment credential resolution and webhook scoping
+
+### Changed
+
+- `playbooks/deploy.yml` now resolves `github_token` from `generic_token`.
+  This allows using AAP's generic token credential type for the GitHub token
+  instead of an extra variable or custom credential field.
+- `rulebooks/lightwell_webhook.yml` now scopes the "Deploy Prod" rule to
+  only trigger when the committer is `web-flow`. This ensures that only
+  PR merges (which GitHub performs as `web-flow`) trigger a production
+  deployment, while direct pushes from other users are ignored by this rule.
+
 ## 2026-09-10 — Link PR checks to AAP job runs and surface GitHub context in the app
 
 ### Added
