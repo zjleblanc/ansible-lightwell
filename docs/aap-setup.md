@@ -13,6 +13,32 @@ using a token minted on demand from a **GitHub App** installation, via the
 `GitHub App Installation Access Token Lookup` credential -- no static
 GitHub PAT is stored anywhere in this pipeline.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Credentials](#credentials)
+  - [Lightwell Network Service Account (custom credential type)](#lightwell-network-service-account-custom-credential-type)
+  - [GitHub App and status-reporting credentials](#github-app-and-status-reporting-credentials)
+  - [Machine Credential](#machine-credential)
+  - [Container Registry Credential (optional)](#container-registry-credential-optional)
+  - [Controller API Credential (for the Rulebook Activation)](#controller-api-credential-for-the-rulebook-activation)
+- [Project](#project)
+- [Inventory](#inventory)
+- [Job Templates](#job-templates)
+  - [Lightwell - Build & Test](#lightwell---build--test)
+  - [Lightwell - Deploy Prod](#lightwell---deploy-prod)
+  - [Lightwell - Rollback (manual)](#lightwell---rollback-manual)
+- [Decision Environment](#decision-environment)
+- [Event Stream & Rulebook Activation](#event-stream--rulebook-activation)
+  - [Event Stream credential](#event-stream-credential)
+  - [Event Stream](#event-stream)
+  - [Rulebook Activation](#rulebook-activation)
+  - [Configure GitHub webhook](#configure-github-webhook)
+- [Branch Protection on GitHub](#branch-protection-on-github)
+- [End-to-End Flow](#end-to-end-flow)
+- [Demo Reset](#demo-reset)
+
 ## Overview
 
 ```mermaid
@@ -41,15 +67,16 @@ flowchart LR
 - A Lightwell Network service account (username in the form
   `<account-id>|<service-account-name>`, plus a token). **Never** commit
   these values to the repository -- store them only as an AAP credential.
-- A **GitHub App** installed on this repository (see step 1b) -- used
-  instead of a personal access token so status-reporting credentials are
-  short-lived and scoped to the app's own permissions.
+- A **GitHub App** installed on this repository (see
+  [GitHub App and status-reporting credentials](#github-app-and-status-reporting-credentials))
+  -- used instead of a personal access token so status-reporting
+  credentials are short-lived and scoped to the app's own permissions.
 
-## 1. Credentials
+## Credentials
 
 Create the following credentials under **Automation Execution -> Infrastructure -> Credentials**:
 
-### 1a. Lightwell Network Service Account (custom credential type)
+### Lightwell Network Service Account (custom credential type)
 
 AAP has no built-in credential type for Lightwell, so define one:
 
@@ -83,15 +110,15 @@ AAP has no built-in credential type for Lightwell, so define one:
 Then create a credential of this new type named `Lightwell Demo Service Account`
 and paste in the service account username and token you were issued.
 
-### 1b. GitHub App and status-reporting credentials
+### GitHub App and status-reporting credentials
 
 Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
 **GitHub App**, minting a short-lived installation access token on demand.
 
 1. **Create the GitHub App** (GitHub org/user -> Settings -> Developer
    settings -> GitHub Apps -> New GitHub App):
-   - Webhook: leave disabled here -- the Event Stream in step 6 receives
-     webhooks independently of the App itself.
+   - Webhook: leave disabled here -- the [Event Stream](#event-stream)
+     receives webhooks independently of the App itself.
    - Repository permissions: **Commit statuses: Read and write**,
      **Contents: Read-only**, **Metadata: Read-only**, **Issues: Read and
      write** (needed for `demo.lightwell.report_status` to post PR
@@ -147,9 +174,9 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
    time this credential is used, instead of storing a static secret.
 
    Attach `Lightwell GitHub Status Reporter` to both the
-   `Lightwell - Build & Test` and `Lightwell - Deploy Prod` job templates
-   (step 4) -- `demo.lightwell.report_status` reads `github_token` from it
-   to post commit statuses back to GitHub.
+   `Lightwell - Build & Test` and `Lightwell - Deploy Prod`
+   [job templates](#job-templates) -- `demo.lightwell.report_status` reads
+   `github_token` from it to post commit statuses back to GitHub.
 
 5. **Set `aap_controller_url`** in `inventory/group_vars/all.yml` (or as an
    extra var) to this controller's base URL, e.g.
@@ -160,12 +187,12 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
    `failure`. Leave it blank to skip these links (e.g. for manual, non-AAP
    launches).
 
-### 1c. Machine Credential
+### Machine Credential
 
 - Type: **Machine**
 - SSH credentials (or SSH key) AAP uses to reach the `rhlw` Podman host.
 
-### 1d. Container Registry Credential (optional)
+### Container Registry Credential (optional)
 
 - Type: **Container Registry**
 - Only needed if `quay.io/lightwell-demo` (or your chosen registry) requires
@@ -174,14 +201,15 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
   pushes) and the `demo.lightwell.deploy_app` role (for pulls on the
   target hosts).
 
-### 1e. Controller API Credential (for the Rulebook Activation)
+### Controller API Credential (for the Rulebook Activation)
 
 - Type: **Red Hat Ansible Automation Platform**
 - A token credential the `run_job_template` action in the rulebook uses to
   call back into Controller and launch job templates. Attach it to the
-  Rulebook Activation in step 6, not to the job templates themselves.
+  [Rulebook Activation](#rulebook-activation), not to the job templates
+  themselves.
 
-## 2. Project
+## Project
 
 **Automation Execution -> Infrastructure -> Projects -> Add**
 
@@ -194,7 +222,8 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
   default `git fetch` only retrieves `refs/heads/*` and `refs/tags/*`, so
   without this refspec GitHub's `refs/pull/<number>/head` refs are never
   fetched and the `scm_branch` override the rulebook supplies for PR
-  builds (step 6c) cannot be resolved.
+  builds (see [Rulebook Activation](#rulebook-activation)) cannot be
+  resolved.
 - Update Revision on Launch: enabled
 
 This same project (and checkout) also supplies the rulebook at
@@ -202,7 +231,7 @@ This same project (and checkout) also supplies the rulebook at
 under **Automation Decisions -> Projects** pointing at the same
 repository URL so the rulebook is available to Rulebook Activations.
 
-## 3. Inventory
+## Inventory
 
 **Automation Execution -> Infrastructure -> Inventories -> Add**
 
@@ -212,15 +241,16 @@ repository URL so the rulebook is available to Rulebook Activations.
   source-controlled inventory pointed at the same project. This one host
   is used for building the image and for both the `dev` and `prod`
   deployments.
-- Attach the Machine credential from step 1c.
+- Attach the [Machine Credential](#machine-credential) from above.
 
-## 4. Job Templates
+## Job Templates
 
 Job templates are no longer launched by GitHub directly -- they're
-launched by the Rulebook Activation's `run_job_template` action (step 6),
+launched by the Rulebook Activation's `run_job_template` action (see
+[Event Stream & Rulebook Activation](#event-stream--rulebook-activation)),
 so **no webhook configuration is needed on the job templates themselves**.
 
-### 4a. Lightwell - Build & Test
+### Lightwell - Build & Test
 
 | Field | Value |
 | --- | --- |
@@ -232,7 +262,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: pull/<number>/head`, the PR branch's actual head commit. (Do not use GitHub's `pull/<number>/merge` ref here -- it's a test-merge commit that GitHub computes asynchronously and can lag several commits behind after a push, so the build can silently check out stale code.) |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: dev`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
-### 4b. Lightwell - Deploy Prod
+### Lightwell - Deploy Prod
 
 | Field | Value |
 | --- | --- |
@@ -244,7 +274,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Limit | `rhlw` |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: prod`, `app_git_sha`, `github_repo_full_name`) |
 
-### 4c. Lightwell - Rollback (manual)
+### Lightwell - Rollback (manual)
 
 | Field | Value |
 | --- | --- |
@@ -257,7 +287,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 No webhook or Event Stream needed -- this template is for on-demand manual
 rollback.
 
-## 5. Decision Environment
+## Decision Environment
 
 **Automation Decisions -> Decision Environments -> Add**
 
@@ -266,26 +296,27 @@ rollback.
   demo (it already includes `ansible.eda`). Only build a custom one if you
   need additional collections inside the rulebook's own container.
 
-## 6. Event Stream & Rulebook Activation
+## Event Stream & Rulebook Activation
 
 This replaces per-job-template webhooks with a single, centrally managed
 entry point.
 
-### 6a. Event Stream credential
+### Event Stream credential
 
 **Automation Decisions -> Infrastructure -> Credentials -> Create credential**
 
 - Credential type: `GitHub Event Stream` (a specialization of the HMAC
   event stream type -- GitHub's signature header defaults are pre-filled)
 - HMAC Secret: generate a strong random string and save it -- you will
-  reuse it as the webhook secret in step 6d
+  reuse it as the webhook secret in
+  [Configure GitHub webhook](#configure-github-webhook) below
 - Name it `Lightwell GitHub Event Stream Credential`
 
 The GitHub Event Stream credential uses HMAC to verify that every incoming
 webhook payload genuinely originated from GitHub and has not been tampered
 with in transit. See [Red Hat docs -- Creating an event stream credential][rh-es-cred].
 
-### 6b. Event Stream
+### Event Stream
 
 **Automation Decisions -> Event Streams -> Create event stream**
 
@@ -297,19 +328,20 @@ with in transit. See [Red Hat docs -- Creating an event stream credential][rh-es
 - Forward events to rulebook activation: **enabled**
 
 After saving, copy the generated **payload URL** -- you will paste it into
-the GitHub webhook in step 6d. See [Red Hat docs -- Creating an event stream][rh-es].
+the GitHub webhook in [Configure GitHub webhook](#configure-github-webhook).
+See [Red Hat docs -- Creating an event stream][rh-es].
 
 > **Tip:** Leave *Forward events to rulebook activation* **disabled**
 > initially so you can confirm connectivity and inspect sample payloads on
 > the Event Stream's detail page before events reach the rulebook. Toggle
 > it on once the webhook is delivering successfully.
 
-### 6c. Rulebook Activation
+### Rulebook Activation
 
 **Automation Decisions -> Rulebook Activations -> Create rulebook activation**
 
 - Name: `Lightwell Patch Pipeline Router`
-- Project: the EDA project from step 2
+- Project: the EDA project from [Project](#project)
 - Rulebook: `rulebooks/lightwell_webhook.yml`
 - Event streams: click the gear icon to open the source-mapping UI and map
   the rulebook's `github_webhook` source to `lightwell-github-events`.
@@ -317,21 +349,23 @@ the GitHub webhook in step 6d. See [Red Hat docs -- Creating an event stream][rh
   `ansible.eda.pg_listener`, routing events from the Event Stream into the
   rulebook. Only the source type, name, and arguments are swapped --
   filters, rules, conditions, and actions remain unchanged.
-- Credentials: the Controller API credential from step 1e (required by
-  `run_job_template` to launch job templates)
+- Credentials: the Controller API credential from
+  [Controller API Credential (for the Rulebook Activation)](#controller-api-credential-for-the-rulebook-activation)
+  (required by `run_job_template` to launch job templates)
 - Decision environment: `lightwell-decision-environment`
 - Restart policy: `On failure`
 
 See [Red Hat docs -- Replacing sources and attaching event streams to activations][rh-es-attach].
 
-### 6d. Configure GitHub webhook
+### Configure GitHub webhook
 
 In the GitHub repository: **Settings -> Webhooks -> Add webhook**
 
-- Payload URL: the Event Stream payload URL copied from step 6b
+- Payload URL: the Event Stream payload URL copied from
+  [Event Stream](#event-stream) above
 - Content type: `application/json`
 - Secret: the same HMAC secret you generated for the `GitHub Event Stream`
-  credential in step 6a
+  credential in [Event Stream credential](#event-stream-credential) above
 - Events: select **Pull requests** and **Pushes** (one webhook covers
   both flows -- the rulebook's conditions decide which job template to
   launch)
@@ -348,7 +382,7 @@ and [Verifying your event streams work][rh-es-verify].
 [rh-es-remote]: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_decisions/simplified-event-routing#event-stream-configure-remote
 [rh-es-verify]: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_decisions/simplified-event-routing#event-stream-verify
 
-## 7. Branch Protection on GitHub
+## Branch Protection on GitHub
 
 **Settings -> Branches -> Add rule** for `main`:
 
@@ -362,7 +396,7 @@ and [Verifying your event streams work][rh-es-verify].
 This is what enforces the "successful test leads to a PR to main with
 approval requirements" step of the pipeline.
 
-## 8. End-to-End Flow
+## End-to-End Flow
 
 1. Renovate scans `app/requirements.txt` against the Lightwell Remediated
    index and opens a PR bumping `PyYAML` or `Jinja2` to a `.rhlw-0000X`
@@ -373,17 +407,10 @@ approval requirements" step of the pipeline.
 3. The rulebook matches the `opened`/`synchronize`/`reopened` condition
    and launches `Lightwell - Build & Test` with `app_git_sha` and
    `github_repo_full_name` from the payload.
-<<<<<<< Updated upstream
-4. `playbooks/deploy_test.yml` marks the `ci/lightwell-test` status
+4. `playbooks/deploy.yml` marks the `ci/lightwell-dev` status
    `pending`, builds the image from the PR branch's head commit
    (`scm_branch: pull/<number>/head`), deploys/health-checks it in
-   `test`, then reports `success` or `failure` back to GitHub using
-=======
-4. `playbooks/deploy.yml` marks the `ci/lightwell-dev` status
-   `pending`, builds the image from the PR merged into `main`
-   (`scm_branch: pull/<number>/merge`), deploys/health-checks it in
    `dev`, then reports `success` or `failure` back to GitHub using
->>>>>>> Stashed changes
    the GitHub App installation token -- including a `target_url` pointing
    at the AAP job run, and a PR comment summarizing the result with a link
    to that same job run.
@@ -402,3 +429,25 @@ approval requirements" step of the pipeline.
    to the previously running image, re-checks health, and reports the
    final outcome -- surfacing as a failed AAP job for alerting if the
    rollback itself doesn't come back healthy.
+
+## Demo Reset
+
+To re-run the demo, downgrade `Flask`, `PyYAML`, and `Jinja2` in
+`app/requirements.txt` (e.g. `Flask==3.1.1`, `PyYAML==6.0.2`,
+`Jinja2==3.1.5`), delete the remote `renovate/lightwell-remediated-patches`
+branch, and push to `main` with a commit message starting with `Reset`:
+
+```
+git push origin --delete renovate/lightwell-remediated-patches
+git commit -am "Reset demo dependencies"
+git push origin main
+```
+
+This triggers two things:
+
+1. The rulebook's `Rebuild dev image on demo reset push` rule matches the
+   `Reset` commit message and immediately rebuilds/redeploys `dev` from
+   `main` -- no PR needed.
+2. Renovate re-detects the downgraded packages and opens a new PR on its
+   next scheduled run (`before 7am` America/Chicago per `renovate.json`),
+   or trigger it manually if demoing outside that window.

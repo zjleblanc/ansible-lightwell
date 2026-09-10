@@ -211,7 +211,7 @@ as a Podman build secret (see [`app/Containerfile`](app/Containerfile) and
 [`demo.lightwell.build_app`](collections/ansible_collections/demo/lightwell/roles/build_app))
 and supplied to Renovate and AAP as secrets/credentials -- see
 [`renovate.json`](renovate.json)'s `hostRules` and
-[`docs/aap-setup.md`](docs/aap-setup.md) section 1a.
+[`docs/aap-setup.md`](docs/aap-setup.md#lightwell-network-service-account-custom-credential-type).
 
 ### Where the Lightwell service account credentials must live
 
@@ -220,7 +220,7 @@ nowhere else:
 
 | Location | Purpose | Never do this |
 | --- | --- | --- |
-| **AAP credential** of type `Lightwell Network` (custom credential type, [`docs/aap-setup.md`](docs/aap-setup.md) section 1a) | Injected into the `build_app` role run as `lightwell_username` / `lightwell_password` extra vars, written to a short-lived `.netrc` used only for the Podman build, then deleted. | Do not put these values in `group_vars`, role `defaults/`, or any extra-vars file checked into git. |
+| **AAP credential** of type `Lightwell Network` (custom credential type, [`docs/aap-setup.md`](docs/aap-setup.md#lightwell-network-service-account-custom-credential-type)) | Injected into the `build_app` role run as `lightwell_username` / `lightwell_password` extra vars, written to a short-lived `.netrc` used only for the Podman build, then deleted. | Do not put these values in `group_vars`, role `defaults/`, or any extra-vars file checked into git. |
 | **GitHub repository secrets** `LIGHTWELL_USERNAME` and `LIGHTWELL_TOKEN` | Referenced by [`renovate.json`](renovate.json)'s `hostRules` (`{{ secrets.LIGHTWELL_USERNAME }}` / `{{ secrets.LIGHTWELL_TOKEN }}`) so Renovate can query the Lightwell Remediated index for new patches. | Do not paste the raw values into `renovate.json` or any onboarding config committed to the repo. |
 | **Local developer machine**, `~/.netrc`, only if running `pip install` against the Lightwell Remediated index outside of a container build | Lets `pip` on your workstation resolve `.rhlw` packages directly for local testing. | Do not commit your `~/.netrc`, and never copy it into the repo working directory (`.gitignore` already excludes any stray `.netrc`). |
 
@@ -347,7 +347,7 @@ pre-commit run --all-files
   configured on `main`.
 - A GitHub App installed on the repository (commit-status write access)
   for AAP to authenticate as when posting status checks -- see
-  [`docs/aap-setup.md`](docs/aap-setup.md) section 1b.
+  [`docs/aap-setup.md`](docs/aap-setup.md#github-app-and-status-reporting-credentials).
 - An AAP instance (2.5+) with Event-Driven Ansible enabled and reachable
   from GitHub -- see [`docs/aap-setup.md`](docs/aap-setup.md).
 - A single Podman-capable RHEL host (inventory group `rhlw`) that AAP

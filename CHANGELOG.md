@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-10 — Add manual demo reset flow via rulebook rule
+
+### Added
+
+- `rulebooks/lightwell_webhook.yml` gains a `Rebuild dev image on demo
+  reset push` rule: pushes to `main` whose commit message starts with
+  `Reset` (case-insensitive) launch **Lightwell // Build & Test** against
+  `scm_branch: main`. This lets a manual downgrade of
+  `app/requirements.txt` immediately rebuild/redeploy the `dev` image
+  without waiting on a PR, while Renovate still re-opens its patch PR on
+  the downgraded packages on its next scheduled run.
+- `docs/aap-setup.md` documents the new reset flow in a "Demo Reset"
+  section.
+
+### Fixed
+
+- `docs/aap-setup.md` had unresolved `<<<<<<<`/`=======`/`>>>>>>>` merge
+  conflict markers left over from a stash pop, describing a stale
+  `deploy_test.yml`/`ci/lightwell-test`/`pull/<number>/merge` flow that no
+  longer exists. Resolved to match the current
+  `playbooks/deploy.yml`/`ci/lightwell-dev`/`pull/<number>/head` flow.
+
 ## 2026-09-10 — Fix PR builds intermittently checking out stale code (use `pull/<number>/head`, not `/merge`)
 
 ### Fixed
