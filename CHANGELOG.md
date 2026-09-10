@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-09-10 — Fix PR builds intermittently checking out stale code (use `pull/<number>/head`, not `/merge`)
+
+### Fixed
+
+- `rulebooks/lightwell_webhook.yml` now supplies
+  `scm_branch: pull/<number>/head` instead of `pull/<number>/merge` when
+  launching **Lightwell // Build & Test**. GitHub computes the
+  `refs/pull/<number>/merge` test-merge ref asynchronously, and it can
+  lag several commits behind after a push to either the PR branch or
+  `main` -- AAP would fetch and check out whatever stale commit that ref
+  currently pointed to, even though the SCM sync itself succeeded and
+  `app_git_sha` (from the webhook payload) was always current. This is
+  why the deployed image's Git SHA/tag updated on every push but the
+  app version inside the image did not. `refs/pull/<number>/head` is
+  the PR branch's actual tip commit, updated atomically on every push,
+  so the build now always matches the code actually in the PR.
+- `docs/aap-setup.md` updated to reference `pull/<number>/head` instead
+  of `pull/<number>/merge` throughout.
+
+### Note
+
+- Builds now test the PR branch in isolation rather than merged with
+  `main`. That's an acceptable tradeoff for this demo, whose PRs are
+  Renovate dependency bumps with no integration changes against `main`.
+
 ## 2026-09-10 — Explicitly pass scm_branch for Deploy Prod (Update Revision on Launch must stay enabled)
 
 ### Fixed

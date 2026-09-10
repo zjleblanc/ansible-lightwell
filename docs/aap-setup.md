@@ -192,7 +192,7 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
   override the checkout ref per-run (needed for pull-request builds).
 - Source Control Refspec: `+refs/pull/*:refs/remotes/origin/pull/*` -- by
   default `git fetch` only retrieves `refs/heads/*` and `refs/tags/*`, so
-  without this refspec GitHub's `refs/pull/<number>/merge` refs are never
+  without this refspec GitHub's `refs/pull/<number>/head` refs are never
   fetched and the `scm_branch` override the rulebook supplies for PR
   builds (step 6c) cannot be resolved.
 - Update Revision on Launch: enabled
@@ -229,7 +229,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Playbook | `playbooks/deploy.yml` |
 | Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
 | Limit | `rhlw` |
-| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: pull/<number>/merge` so the build checks out the PR merged into `main`, not just the PR head in isolation |
+| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: pull/<number>/head`, the PR branch's actual head commit. (Do not use GitHub's `pull/<number>/merge` ref here -- it's a test-merge commit that GitHub computes asynchronously and can lag several commits behind after a push, so the build can silently check out stale code.) |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: dev`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
 ### 4b. Lightwell - Deploy Prod
@@ -373,8 +373,8 @@ approval requirements" step of the pipeline.
    and launches `Lightwell - Build & Test` with `app_git_sha` and
    `github_repo_full_name` from the payload.
 4. `playbooks/deploy_test.yml` marks the `ci/lightwell-test` status
-   `pending`, builds the image from the PR merged into `main`
-   (`scm_branch: pull/<number>/merge`), deploys/health-checks it in
+   `pending`, builds the image from the PR branch's head commit
+   (`scm_branch: pull/<number>/head`), deploys/health-checks it in
    `test`, then reports `success` or `failure` back to GitHub using
    the GitHub App installation token -- including a `target_url` pointing
    at the AAP job run, and a PR comment summarizing the result with a link

@@ -23,7 +23,7 @@
               app_git_sha: "{{ event.payload.pull_request.head.sha }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
               github_pr_number: "{{ event.payload.pull_request.number }}"
-            scm_branch: "pull/{{ event.payload.pull_request.number }}/merge"
+            scm_branch: "pull/{{ event.payload.pull_request.number }}/head"
 
     - name: Launch deploy to prod on pull request merge
       condition: >-
