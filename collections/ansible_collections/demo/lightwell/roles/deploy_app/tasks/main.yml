@@ -64,6 +64,8 @@
     image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
     state: quadlet
     quadlet_dir: "{{ quadlet_dir }}"
+    quadlet_options:
+      - "AutoUpdate=registry"
     ports:
       - "{{ app_host_port }}:8080"
     env:

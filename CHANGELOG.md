@@ -1,31 +1,50 @@
 # Changelog
 
-## 2026-09-10 — Fix image updates not taking effect due to AutoUpdate=registry
+## 2026-09-10 — Fix PR builds intermittently checking out stale code (use `pull/<number>/head`, not `/merge`)
 
 ### Fixed
 
-- `demo.lightwell.deploy_app` no longer sets `AutoUpdate=registry` in the
-  generated Quadlet file. This setting caused Podman to ignore the updated
-  image tag deployed by Ansible and instead pull whatever image the registry
-  currently had for that tag (often an older cached version) when the systemd
-  service restarted, resulting in the app running an outdated version despite
-  a successful deployment.
-## 2026-09-10 — Fix double project sync on SCM branch override
+- `rulebooks/lightwell_webhook.yml` now supplies
+  `scm_branch: pull/<number>/head` instead of `pull/<number>/merge` when
+  launching **Lightwell // Build & Test**. GitHub computes the
+  `refs/pull/<number>/merge` test-merge ref asynchronously, and it can
+  lag several commits behind after a push to either the PR branch or
+  `main` -- AAP would fetch and check out whatever stale commit that ref
+  currently pointed to, even though the SCM sync itself succeeded and
+  `app_git_sha` (from the webhook payload) was always current. This is
+  why the deployed image's Git SHA/tag updated on every push but the
+  app version inside the image did not. `refs/pull/<number>/head` is
+  the PR branch's actual tip commit, updated atomically on every push,
+  so the build now always matches the code actually in the PR.
+- `docs/aap-setup.md` updated to reference `pull/<number>/head` instead
+  of `pull/<number>/merge` throughout.
+
+### Note
+
+- Builds now test the PR branch in isolation rather than merged with
+  `main`. That's an acceptable tradeoff for this demo, whose PRs are
+  Renovate dependency bumps with no integration changes against `main`.
+
+## 2026-09-10 — Explicitly pass scm_branch for Deploy Prod (Update Revision on Launch must stay enabled)
 
 ### Fixed
 
 - `rulebooks/lightwell_webhook.yml` now explicitly supplies `scm_branch: main`
-  when launching **Lightwell // Deploy Prod**. This ensures the job template
-  still triggers a project sync now that the project's own update-on-launch
-  behavior is disabled.
+  when launching **Lightwell // Deploy Prod**, matching the existing
+  `scm_branch: pull/<number>/merge` override on Build & Test.
 
-### Changed
+### Note
 
-- `docs/aap-setup.md` now documents that **Update Revision on Launch** must be
-  disabled on the AAP project to prevent redundant default-branch syncs that
-  conflict with the rulebook's `scm_branch` overrides. Also updated the
-  Deploy Prod job template documentation to reflect the new `scm_branch: main`
-  override.
+- A prior attempt to fix a double project-sync-on-launch (disabling
+  **Update Revision on Launch** on the `ansible-lightwell` project) was
+  reverted. That setting is required for AAP to `git fetch` the PR merge
+  refs (via `scm_refspec`) that the `scm_branch` override depends on --
+  disabling it left the project's local clone pinned to a stale revision,
+  so PR builds picked up `main`'s code instead of the PR's. The double
+  sync AAP performs when both `scm_update_on_launch` and a job's
+  `scm_branch` override are in play is a known upstream performance
+  quirk ([ansible/awx#13630](https://github.com/ansible/awx/issues/13630)),
+  not a correctness issue -- it should be left enabled.
 
 ## 2026-09-10 — Surface Pull Request links in the application dashboard
 
