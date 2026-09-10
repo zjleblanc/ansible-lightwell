@@ -58,7 +58,7 @@
         - name: Re-raise the build failure so the AAP job is marked failed
           ansible.builtin.fail:
             msg: >-
-              Build failed for {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.
+              Build failed for {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
               See the task output above for the underlying error.
 
 - name: Deploy and verify the Lightwell demo application
@@ -150,7 +150,7 @@
           ansible.builtin.debug:
             msg: >-
               {{ app_environment | capitalize }} deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
-              for image {{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}.
+              for image {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
 
     - name: Fail the play if unhealthy after any rollback attempt
       when: not health_check_passed

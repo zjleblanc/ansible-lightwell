@@ -83,3 +83,11 @@
     name: "{{ app_service_name }}.service"
     state: restarted
     enabled: true
+
+- name: Open the application host port in firewalld
+  become: true
+  ansible.posix.firewalld:
+    port: "{{ app_host_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
