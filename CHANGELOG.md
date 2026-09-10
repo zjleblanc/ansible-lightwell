@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-10 — Fix image updates not taking effect due to AutoUpdate=registry
+
+### Fixed
+
+- `demo.lightwell.deploy_app` no longer sets `AutoUpdate=registry` in the
+  generated Quadlet file. This setting caused Podman to ignore the updated
+  image tag deployed by Ansible and instead pull whatever image the registry
+  currently had for that tag (often an older cached version) when the systemd
+  service restarted, resulting in the app running an outdated version despite
+  a successful deployment.
+
 ## 2026-09-10 — Fix PR builds checking out `main` instead of the PR's code
 
 ### Fixed
