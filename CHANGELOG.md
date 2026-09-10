@@ -10,6 +10,37 @@
   currently had for that tag (often an older cached version) when the systemd
   service restarted, resulting in the app running an outdated version despite
   a successful deployment.
+## 2026-09-10 — Fix double project sync on SCM branch override
+
+### Fixed
+
+- `rulebooks/lightwell_webhook.yml` now explicitly supplies `scm_branch: main`
+  when launching **Lightwell // Deploy Prod**. This ensures the job template
+  still triggers a project sync now that the project's own update-on-launch
+  behavior is disabled.
+
+### Changed
+
+- `docs/aap-setup.md` now documents that **Update Revision on Launch** must be
+  disabled on the AAP project to prevent redundant default-branch syncs that
+  conflict with the rulebook's `scm_branch` overrides. Also updated the
+  Deploy Prod job template documentation to reflect the new `scm_branch: main`
+  override.
+
+## 2026-09-10 — Surface Pull Request links in the application dashboard
+
+### Added
+
+- `demo.lightwell.deploy_app` now passes `GITHUB_PR_NUMBER` into the deployed
+  container as an environment variable, alongside the repository and SHA.
+- `app/app.py` reads `GITHUB_PR_NUMBER` from the environment and makes it
+  available to templates.
+
+### Changed
+
+- `app/templates/dashboard.html` now links the version badge to the GitHub
+  Pull Request (e.g. `PR #12`) instead of the commit SHA when a dev build
+  is triggered by a PR, providing easier navigation back to the code review.
 
 ## 2026-09-10 — Fix PR builds checking out `main` instead of the PR's code
 
