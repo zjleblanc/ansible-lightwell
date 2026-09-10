@@ -17,7 +17,7 @@
   delay: "{{ health_check_http_delay }}"
   failed_when: false
   ansible.builtin.uri:
-    url: "http://{{ health_check_host | default(ansible_host) | default('localhost') }}:{{ app_host_port }}/healthz"
+    url: "http://localhost:{{ app_host_port }}/healthz"
     method: GET
     status_code: 200
     return_content: true

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-10 — Open firewall ports for Quadlet app services
+
+### Added
+
+- `demo.lightwell.deploy_app` now opens `{{ app_host_port }}/tcp` (`8080`
+  for `dev`, `8081` for `prod`) in `firewalld` via
+  `ansible.posix.firewalld` (`permanent: true`, `immediate: true`) after
+  restarting/enabling the Quadlet service. Podman's `-p` port mapping
+  publishes the container port on the host, but never opened the host
+  firewall, so external clients couldn't reach the app on a host running
+  `firewalld` with a restrictive default zone. No new collection
+  dependency: `ansible.posix >= 1.6.0` was already required.
+
 ## 2026-09-10 — Convert container deployment to Podman Quadlet and rename test to dev
 
 ### Changed
