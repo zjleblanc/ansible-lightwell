@@ -229,6 +229,93 @@ Lightwell username format (`<id>|<name>`), Lightwell JWT tokens, and
 `.netrc` credential blocks, so an accidental commit of any of the above is
 caught by the pre-commit hook before it ever reaches git history.
 
+## Setting up Renovate
+
+The steps below are what's needed to bring Renovate up on a fresh copy of
+this repo (e.g. after forking it into your own GitHub org).
+
+### 1. Install the Renovate GitHub App
+
+Renovate's hosted [GitHub App](https://github.com/apps/renovate) is free
+for public and private repositories, with no usage limits.
+
+- Go to [github.com/apps/renovate](https://github.com/apps/renovate) and
+  click **Install**.
+- Pick the account/org that owns the repo, then select **Only select
+  repositories** and choose this one (or **All repositories** if you want
+  it everywhere).
+- No plan selection or payment step -- installing grants access
+  immediately.
+
+Renovate then reads the [`renovate.json`](renovate.json) already
+committed at the repo root and starts scanning on its own schedule; no
+onboarding PR is needed since the config file already exists.
+
+### 2. Configure `renovate.json`
+
+The committed [`renovate.json`](renovate.json) is ready to use as-is. The
+settings that matter most for this repo:
+
+- `enabledManagers: ["pip_requirements"]` -- only scans
+  `app/requirements.txt`, not every possible ecosystem.
+- `packageRules[0].registryUrls` -- points the `PyYAML`/`Jinja2` lookups
+  at the Lightwell Remediated index first, falling back to PyPI.
+- `hostRules` -- authenticates against `packages.redhat.com` using
+  `{{ secrets.LIGHTWELL_USERNAME }}` / `{{ secrets.LIGHTWELL_TOKEN }}`
+  (see step 3).
+- `vulnerabilityAlerts.enabled: true` -- runs immediately on CVE
+  detection, bypassing the `schedule` below.
+
+### 3. Add the Lightwell credentials
+
+`hostRules` references two secrets that must be defined in the
+**Mend Developer Portal**, not as GitHub repository secrets (the hosted
+Renovate app can't read GitHub Actions secrets):
+
+- Go to [developer.mend.io](https://developer.mend.io/), find this
+  repository, and add `LIGHTWELL_USERNAME` and `LIGHTWELL_TOKEN` as
+  encrypted secrets there.
+- See [Where the Lightwell service account credentials must
+  live](#where-the-lightwell-service-account-credentials-must-live)
+  above for what these values are and where else they're used.
+
+### 4. Scan schedule
+
+`renovate.json` sets:
+
+```json
+"timezone": "America/Chicago",
+"schedule": ["before 7am every day"]
+```
+
+This limits scans (and new/updated PRs) to a daily window before 7 AM
+Central. `vulnerabilityAlerts` ignores this window and fires as soon as a
+CVE is published. To change the cadence, edit the `schedule` array using
+[later.js syntax](https://breejs.github.io/later/), e.g.:
+
+- `"before 7am on Monday"` -- weekly
+- `"every weekday"` -- Monday-Friday, any time
+- Remove the `schedule` key entirely -- scan at any time
+
+### 5. Trigger a scan manually
+
+Two ways to force a scan without waiting for the schedule:
+
+- **Dependency Dashboard issue** (recommended): after the first scan,
+  Renovate opens a "Dependency Dashboard" issue in the repo. Check the
+  "Click on this checkbox to trigger a scan" box in that issue and save;
+  Renovate picks up the change within a few minutes.
+- **Rebase an existing PR**: on any open Renovate PR, tick the "rebase"
+  checkbox in the PR description to force Renovate to re-evaluate that
+  one dependency immediately.
+
+### What happens next
+
+Once Renovate opens a PR bumping `PyYAML` or `Jinja2`, it flows through
+the same pipeline described in [The patch pipeline, end to
+end](#the-patch-pipeline-end-to-end) above -- EDA routes the webhook to
+AAP, which builds, tests, and reports status back to the PR.
+
 ## Code quality: linting and pre-commit hooks
 
 This repo uses [pre-commit](https://pre-commit.com/) to enforce the same

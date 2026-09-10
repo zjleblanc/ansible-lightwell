@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "timezone": "America/Chicago",
+  "schedule": ["before 7am every day"],
   "enabledManagers": ["pip_requirements"],
   "labels": ["lightwell-patch", "automated"],
   "prConcurrentLimit": 5,
