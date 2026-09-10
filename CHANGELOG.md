@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-10 — Link PR checks to AAP job runs and surface GitHub context in the app
+
+### Added
+
+- `demo.lightwell.report_status` now attaches a `target_url` to the
+  GitHub commit status, built from a new `aap_controller_url` variable
+  and the `awx_job_id` magic variable AAP injects into every job run, so
+  the "Details" link on a PR check opens the AAP job output directly.
+  Left blank by default so manual, non-AAP launches don't produce a
+  broken link; set in `inventory/group_vars/all.yml` and documented in
+  `docs/aap-setup.md`.
+- `demo.lightwell.report_status` now also posts a PR comment (via the
+  GitHub Issues Comments API) summarizing the final `success`/`failure`
+  result with a link to the AAP job run, for PR (dev) builds only --
+  guarded by `github_pr_number is defined` so prod pushes (which have no
+  PR) are unaffected. Requires the GitHub App to have `Issues: Read and
+  write` permission, documented in `docs/aap-setup.md`.
+- `demo.lightwell.deploy_app` now passes `GITHUB_REPO` and `APP_GIT_SHA`
+  into the deployed container as environment variables (Quadlet `env`
+  block), sourced from `github_repo_full_name` and `app_git_sha`.
+- `app/app.py` reads `GITHUB_REPO`/`APP_GIT_SHA` from the environment and
+  injects them into every template via a new `app.context_processor`.
+- `app/templates/base.html` shows a "GitHub" link in the header nav
+  (opens the repo in a new tab) when `GITHUB_REPO` is set.
+- `app/templates/dashboard.html` shows a `.sha-pill` badge next to the
+  version pill with the short (7-character) deployed commit SHA, linking
+  to the commit on GitHub, when `APP_GIT_SHA` is set. Styled in
+  `app/static/style.css`.
+
 ## 2026-09-10 — Fix missing requirements.txt in the deployed container
 
 ### Fixed

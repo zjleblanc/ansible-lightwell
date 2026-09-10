@@ -19,6 +19,9 @@
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('healthz') }}">Health</a>
             <a href="{{ url_for('api_config') }}">Config API</a>
+            {% if github_repo %}
+            <a href="https://github.com/{{ github_repo }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+            {% endif %}
         </nav>
     </header>
     <main>

@@ -93,7 +93,9 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
    - Webhook: leave disabled here -- the Event Stream in step 6 receives
      webhooks independently of the App itself.
    - Repository permissions: **Commit statuses: Read and write**,
-     **Contents: Read-only**, **Metadata: Read-only**.
+     **Contents: Read-only**, **Metadata: Read-only**, **Issues: Read and
+     write** (needed for `demo.lightwell.report_status` to post PR
+     comments).
    - Generate a private key (downloads a `.pem` file) and note the **App
      ID**.
    - Install the App on the `ansible-lightwell` repository and note the
@@ -148,6 +150,15 @@ Instead of a static GitHub PAT, this pipeline authenticates to GitHub as a
    `Lightwell - Build & Test` and `Lightwell - Deploy Prod` job templates
    (step 4) -- `demo.lightwell.report_status` reads `github_token` from it
    to post commit statuses back to GitHub.
+
+5. **Set `aap_controller_url`** in `inventory/group_vars/all.yml` (or as an
+   extra var) to this controller's base URL, e.g.
+   `https://aap.example.com`. `demo.lightwell.report_status` uses it,
+   together with the `awx_job_id` magic variable AAP injects automatically,
+   to build a link back to the job run -- attached as the commit status's
+   `target_url` and included in the PR comment it posts on `success`/
+   `failure`. Leave it blank to skip these links (e.g. for manual, non-AAP
+   launches).
 
 ### 1c. Machine Credential
 
@@ -359,7 +370,9 @@ approval requirements" step of the pipeline.
 4. `playbooks/deploy_test.yml` marks the `ci/lightwell-test` status
    `pending`, builds the image from the PR branch, deploys/health-checks
    it in `test`, then reports `success` or `failure` back to GitHub using
-   the GitHub App installation token.
+   the GitHub App installation token -- including a `target_url` pointing
+   at the AAP job run, and a PR comment summarizing the result with a link
+   to that same job run.
 5. Branch protection blocks merging until `ci/lightwell-test` passes and a
    reviewer approves; a reviewer then merges the PR into `main`.
 6. GitHub sends a `push` webhook to the same Event Stream; the rulebook

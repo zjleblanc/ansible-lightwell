@@ -6,3 +6,8 @@ lightwell_registry_host: packages.redhat.com
 # Fallback used only when a job template is launched manually (without the
 # EDA rulebook supplying github_repo_full_name from the webhook payload).
 github_repo_full_name: zjleblanc/ansible-lightwell
+
+# Base URL of the AAP controller UI (no trailing slash), used by
+# demo.lightwell.report_status to link GitHub statuses/PR comments back to
+# the job run. Set to your controller's URL, e.g. "https://aap.example.com".
+aap_controller_url: ""

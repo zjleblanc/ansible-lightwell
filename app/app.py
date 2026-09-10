@@ -62,6 +62,14 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["CONFIG_DATA"] = load_config()
 
+    @app.context_processor
+    def inject_github_context() -> dict[str, Any]:
+        """Expose the repo and deployed commit SHA to every template."""
+        return {
+            "github_repo": os.environ.get("GITHUB_REPO", ""),
+            "app_git_sha": os.environ.get("APP_GIT_SHA", ""),
+        }
+
     @app.get("/")
     def dashboard():
         config_data = app.config["CONFIG_DATA"]

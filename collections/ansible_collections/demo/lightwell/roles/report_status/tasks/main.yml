@@ -1,6 +1,13 @@
 ---
 # Reports commit status to GitHub via GitHub App token lookup.
 # Required because EDA routes events externally from the job template.
+- name: Build the AAP job run URL for linking back from GitHub
+  when:
+    - aap_controller_url | length > 0
+    - awx_job_id is defined
+  ansible.builtin.set_fact:
+    aap_job_url: "{{ aap_controller_url }}/#/jobs/{{ awx_job_id }}/output"
+
 - name: Report commit status to GitHub
   when:
     - github_token is defined
@@ -19,6 +26,7 @@
       state: "{{ github_status_state }}"
       context: "{{ github_status_context }}"
       description: "{{ github_status_description }}"
+      target_url: "{{ aap_job_url | default(none) }}"
     status_code: [201]
 
 - name: Warn when the GitHub status could not be reported
@@ -31,3 +39,41 @@
     msg: >-
       Skipped GitHub status for {{ github_repo_full_name | default('unknown') }}@{{ app_git_sha | default('unknown') }}.
       Likely a manual launch without EDA-supplied credentials.
+
+- name: Compose the PR comment body (PR builds only)
+  when:
+    - github_pr_number is defined
+    - github_status_state in ['success', 'failure']
+  ansible.builtin.set_fact:
+    github_pr_comment_body: >-
+      {{ '✅' if github_status_state == 'success' else '❌' }} **{{ github_status_context }}**: {{ github_status_description }}{{
+        ('\n\n[View the AAP job run](' + aap_job_url + ')') if aap_job_url is defined else '' }}
+
+- name: Post a PR comment summarizing the result (PR builds only)
+  when:
+    - github_token is defined
+    - github_repo_full_name is defined
+    - github_pr_number is defined
+    - github_status_state in ['success', 'failure']
+  register: github_pr_comment_result
+  failed_when: false
+  ansible.builtin.uri:
+    url: "{{ github_api_url }}/repos/{{ github_repo_full_name }}/issues/{{ github_pr_number }}/comments"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ github_token }}"
+      Accept: application/vnd.github+json
+    body_format: json
+    body:
+      body: "{{ github_pr_comment_body }}"
+    status_code: [201]
+
+- name: Warn when the PR comment could not be posted
+  when: >-
+    github_pr_number is defined and
+    (github_token is not defined or
+     github_repo_full_name is not defined or
+     (github_pr_comment_result is defined and github_pr_comment_result.failed | default(false)))
+  ansible.builtin.debug:
+    msg: >-
+      Skipped GitHub PR comment for {{ github_repo_full_name | default('unknown') }}#{{ github_pr_number | default('unknown') }}.

@@ -71,6 +71,8 @@
     env:
       PORT: "8080"
       APP_ENVIRONMENT: "{{ app_environment }}"
+      GITHUB_REPO: "{{ github_repo_full_name | default('') }}"
+      APP_GIT_SHA: "{{ app_git_sha | default('') }}"
 
 - name: Reload systemd so the Quadlet generator picks up the unit
   become: true

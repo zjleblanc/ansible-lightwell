@@ -125,6 +125,24 @@ main {
   color: var(--lw-text-muted);
 }
 
+.sha-pill {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--lw-panel-border);
+  background: var(--lw-panel);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  color: var(--lw-red);
+  text-decoration: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.sha-pill:hover {
+  box-shadow: 0 0 12px var(--lw-glow);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

@@ -9,6 +9,11 @@
     <h1>{{ service.name }}</h1>
     <p class="tagline">{{ service.description }}</p>
     <span class="version-pill">v{{ service.version }}</span>
+    {% if app_git_sha %}
+    <a href="https://github.com/{{ github_repo }}/commit/{{ app_git_sha }}" target="_blank" rel="noopener noreferrer" class="sha-pill" title="Deployed commit {{ app_git_sha }}">
+        {{ app_git_sha[:7] }}
+    </a>
+    {% endif %}
 </section>
 
 <section class="grid">
