@@ -259,7 +259,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Playbook | `playbooks/deploy.yml` |
 | Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
 | Limit | `rhlw` |
-| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: pull/<number>/head`, the PR branch's actual head commit. (Do not use GitHub's `pull/<number>/merge` ref here -- it's a test-merge commit that GitHub computes asynchronously and can lag several commits behind after a push, so the build can silently check out stale code.) |
+| Source Control Branch/Tag/Commit override | Prompt on launch -- for PR builds the rulebook supplies `scm_branch: pull/<number>/head`, the PR branch's actual head commit. (Do not use GitHub's `pull/<number>/merge` ref here -- it's a test-merge commit that GitHub computes asynchronously and can lag several commits behind after a push, so the build can silently check out stale code.) For [Demo Reset](#demo-reset) pushes the rulebook instead supplies `scm_branch: "{{ event.payload.after }}"` -- the exact push commit SHA, matching `app_git_sha` -- rather than the symbolic `main` branch, so the project sync can't resolve to a later commit that lands on `main` before the sync runs. |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: dev`, `app_git_sha`, `github_repo_full_name`, `github_pr_number`) |
 
 ### Lightwell - Deploy Prod
@@ -270,7 +270,7 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/deploy.yml` |
 | Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
-| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: main` so this job template builds from the merged `main` branch (not the PR's dev image) and gets a fresh project sync now that the project's own Update Revision on Launch is disabled |
+| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: "{{ event.payload.after }}"`, the exact merge commit SHA (matching `app_git_sha`), rather than the symbolic `main` branch, so the project checkout can't drift to a later commit that lands on `main` before the sync runs. This builds from the merge commit (not the PR's dev image) and gets a fresh project sync now that the project's own Update Revision on Launch is disabled |
 | Limit | `rhlw` |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: prod`, `app_git_sha`, `github_repo_full_name`) |
 
@@ -447,7 +447,8 @@ This triggers two things:
 
 1. The rulebook's `Rebuild dev image on demo reset push` rule matches the
    `Reset` commit message and immediately rebuilds/redeploys `dev` from
-   `main` -- no PR needed.
+   that exact push commit on `main` (pinned via `scm_branch`, matching
+   `app_git_sha`) -- no PR needed.
 2. Renovate re-detects the downgraded packages and opens a new PR on its
    next scheduled run (`before 7am` America/Chicago per `renovate.json`),
    or trigger it manually if demoing outside that window.

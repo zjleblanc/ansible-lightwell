@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-10 — Fix `scm_branch`/`app_git_sha` mismatch for reset and prod deploy pushes
+
+### Fixed
+
+- `rulebooks/lightwell_webhook.yml` now supplies
+  `scm_branch: "{{ event.payload.after }}"` instead of `scm_branch: main`
+  when launching **Lightwell // Build & Test** for demo reset pushes and
+  **Lightwell // Deploy Prod**. `scm_branch: main` resolves against
+  whatever `main` pointed to at project-sync time, which could race ahead
+  of the exact commit that triggered the webhook -- so the checked-out
+  revision (and thus the built image) could silently diverge from
+  `app_git_sha`, the same SHA reported to GitHub and used for the image
+  tag. Pinning `scm_branch` to `event.payload.after` (identical to
+  `app_git_sha`) guarantees the project checkout always matches.
+- `docs/aap-setup.md` updated: the `Lightwell - Build & Test` and
+  `Lightwell - Deploy Prod` job template tables, and the Demo Reset
+  walkthrough, now describe the pinned-SHA `scm_branch` override instead
+  of the symbolic `main` branch.
+
 ## 2026-09-10 — Add manual demo reset flow via rulebook rule
 
 ### Added

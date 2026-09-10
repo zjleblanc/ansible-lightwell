@@ -40,7 +40,7 @@
               app_environment: dev
               app_git_sha: "{{ event.payload.after }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
-            scm_branch: main
+            scm_branch: "{{ event.payload.after }}"
 
     - name: Launch deploy to prod on pull request merge
       condition: >-
@@ -58,7 +58,7 @@
               app_environment: prod
               app_git_sha: "{{ event.payload.after }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
-            scm_branch: main
+            scm_branch: "{{ event.payload.after }}"
 
     - name: Catch and Log
       condition: >-
