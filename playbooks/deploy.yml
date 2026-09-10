@@ -2,6 +2,10 @@
 - name: Build the Lightwell demo application image
   hosts: rhlw
   gather_facts: false
+
+  vars:
+    github_token: "{{ generic_token | default(undefined) }}"
+
   tasks:
     - name: Check whether the PR touches app/ files (Dev only)
       when:
@@ -64,6 +68,10 @@
 - name: Deploy and verify the Lightwell demo application
   hosts: rhlw
   gather_facts: false
+
+  vars:
+    github_token: "{{ generic_token | default(undefined) }}"
+
   pre_tasks:
     - name: Check whether the push commit touches app/ files (Prod only)
       when:
