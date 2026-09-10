@@ -1,21 +1,25 @@
 # Changelog
 
-## 2026-09-10 — Fix double project sync on SCM branch override
+## 2026-09-10 — Explicitly pass scm_branch for Deploy Prod (Update Revision on Launch must stay enabled)
 
 ### Fixed
 
 - `rulebooks/lightwell_webhook.yml` now explicitly supplies `scm_branch: main`
-  when launching **Lightwell // Deploy Prod**. This ensures the job template
-  still triggers a project sync now that the project's own update-on-launch
-  behavior is disabled.
+  when launching **Lightwell // Deploy Prod**, matching the existing
+  `scm_branch: pull/<number>/merge` override on Build & Test.
 
-### Changed
+### Note
 
-- `docs/aap-setup.md` now documents that **Update Revision on Launch** must be
-  disabled on the AAP project to prevent redundant default-branch syncs that
-  conflict with the rulebook's `scm_branch` overrides. Also updated the
-  Deploy Prod job template documentation to reflect the new `scm_branch: main`
-  override.
+- A prior attempt to fix a double project-sync-on-launch (disabling
+  **Update Revision on Launch** on the `ansible-lightwell` project) was
+  reverted. That setting is required for AAP to `git fetch` the PR merge
+  refs (via `scm_refspec`) that the `scm_branch` override depends on --
+  disabling it left the project's local clone pinned to a stale revision,
+  so PR builds picked up `main`'s code instead of the PR's. The double
+  sync AAP performs when both `scm_update_on_launch` and a job's
+  `scm_branch` override are in play is a known upstream performance
+  quirk ([ansible/awx#13630](https://github.com/ansible/awx/issues/13630)),
+  not a correctness issue -- it should be left enabled.
 
 ## 2026-09-10 — Surface Pull Request links in the application dashboard
 
