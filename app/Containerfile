@@ -21,6 +21,7 @@ COPY app.py ./
 COPY templates/ templates/
 COPY static/ static/
 COPY config/ config/
+COPY requirements.txt ./
 
 ENV PYTHONUNBUFFERED=1 \
     PORT=8080
