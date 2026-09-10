@@ -1,0 +1,23 @@
+---
+- name: Install firewalld and its Python library
+  become: true
+  ansible.builtin.dnf:
+    name:
+      - firewalld
+      - python3-firewall
+    state: present
+
+- name: Enable and start firewalld
+  become: true
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Open the application host port in firewalld
+  become: true
+  ansible.posix.firewalld:
+    port: "{{ app_host_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
