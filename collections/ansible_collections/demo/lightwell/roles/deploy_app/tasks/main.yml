@@ -84,16 +84,5 @@
     state: restarted
     enabled: true
 
-- name: Install the firewall Python library
-  become: true
-  ansible.builtin.dnf:
-    name: python3-firewall
-    state: present
-
-- name: Open the application host port in firewalld
-  become: true
-  ansible.posix.firewalld:
-    port: "{{ app_host_port }}/tcp"
-    permanent: true
-    immediate: true
-    state: enabled
+- name: Configure firewalld
+  ansible.builtin.include_tasks: firewalld.yml
