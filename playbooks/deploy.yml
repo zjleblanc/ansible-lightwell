@@ -37,42 +37,6 @@
             - name: End play
               ansible.builtin.meta: end_play
 
-    - name: Mark the GitHub status check as pending (Dev only)
-      when: app_environment == 'dev'
-      vars:
-        github_status_state: pending
-        github_status_description: "Building application image for {{ app_environment }}"
-      ansible.builtin.include_role:
-        name: demo.lightwell.report_status
-
-    - name: Build the application image (Dev only)
-      when: app_environment == 'dev'
-      block:
-        - name: Build the application image
-          ansible.builtin.include_role:
-            name: demo.lightwell.build_app
-      rescue:
-        - name: Report the build failure to GitHub so the check does not hang pending
-          vars:
-            github_status_state: failure
-            github_status_description: "Build failed for {{ app_environment }} -- see AAP job output for details"
-          ansible.builtin.include_role:
-            name: demo.lightwell.report_status
-
-        - name: Re-raise the build failure so the AAP job is marked failed
-          ansible.builtin.fail:
-            msg: >-
-              Build failed for {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
-              See the task output above for the underlying error.
-
-- name: Deploy and verify the Lightwell demo application
-  hosts: rhlw
-  gather_facts: false
-
-  vars:
-    github_token: "{{ generic_token | default(undefined) }}"
-
-  pre_tasks:
     - name: Check whether the push commit touches app/ files (Prod only)
       when:
         - app_environment == 'prod'
@@ -103,6 +67,40 @@
             - name: End play
               ansible.builtin.meta: end_play
 
+    - name: Mark the GitHub status check as pending
+      vars:
+        github_status_state: pending
+        github_status_description: "Building application image for {{ app_environment }}"
+      ansible.builtin.include_role:
+        name: demo.lightwell.report_status
+
+    - name: Build the application image
+      block:
+        - name: Build the application image
+          ansible.builtin.include_role:
+            name: demo.lightwell.build_app
+      rescue:
+        - name: Report the build failure to GitHub so the check does not hang pending
+          vars:
+            github_status_state: failure
+            github_status_description: "Build failed for {{ app_environment }} -- see AAP job output for details"
+          ansible.builtin.include_role:
+            name: demo.lightwell.report_status
+
+        - name: Re-raise the build failure so the AAP job is marked failed
+          ansible.builtin.fail:
+            msg: >-
+              Build failed for {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
+              See the task output above for the underlying error.
+
+- name: Deploy and verify the Lightwell demo application
+  hosts: rhlw
+  gather_facts: false
+
+  vars:
+    github_token: "{{ generic_token | default(undefined) }}"
+
+  pre_tasks:
     - name: Mark the GitHub status check as pending (Prod only)
       when: app_environment == 'prod'
       vars:

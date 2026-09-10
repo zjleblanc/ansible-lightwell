@@ -239,7 +239,8 @@ so **no webhook configuration is needed on the job templates themselves**.
 | Inventory | `lightwell-demo` |
 | Project | `ansible-lightwell` |
 | Playbook | `playbooks/deploy.yml` |
-| Credentials | Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
+| Credentials | Lightwell Demo Service Account, Machine, Container Registry (if used), Lightwell GitHub Status Reporter |
+| Source Control Branch/Tag/Commit override | Prompt on launch -- the rulebook supplies `scm_branch: main` so this job template builds from the merged `main` branch (not the PR's dev image) and gets a fresh project sync now that the project's own Update Revision on Launch is disabled |
 | Limit | `rhlw` |
 | Extra Variables | Prompt on launch (the rulebook supplies `app_environment: prod`, `app_git_sha`, `github_repo_full_name`) |
 
@@ -354,8 +355,8 @@ and [Verifying your event streams work][rh-es-verify].
 - Require a pull request before merging
 - Require approvals (at least 1)
 - Require status checks to pass before merging -- select the
-  `ci/lightwell-test` context (posted by `demo.lightwell.report_status`
-  from `playbooks/deploy_test.yml`, using the token from the
+  `ci/lightwell-dev` context (posted by `demo.lightwell.report_status`
+  from `playbooks/deploy.yml`, using the token from the
   `Lightwell GitHub Status Reporter` credential)
 
 This is what enforces the "successful test leads to a PR to main with
@@ -372,21 +373,31 @@ approval requirements" step of the pipeline.
 3. The rulebook matches the `opened`/`synchronize`/`reopened` condition
    and launches `Lightwell - Build & Test` with `app_git_sha` and
    `github_repo_full_name` from the payload.
+<<<<<<< Updated upstream
 4. `playbooks/deploy_test.yml` marks the `ci/lightwell-test` status
    `pending`, builds the image from the PR branch's head commit
    (`scm_branch: pull/<number>/head`), deploys/health-checks it in
    `test`, then reports `success` or `failure` back to GitHub using
+=======
+4. `playbooks/deploy.yml` marks the `ci/lightwell-dev` status
+   `pending`, builds the image from the PR merged into `main`
+   (`scm_branch: pull/<number>/merge`), deploys/health-checks it in
+   `dev`, then reports `success` or `failure` back to GitHub using
+>>>>>>> Stashed changes
    the GitHub App installation token -- including a `target_url` pointing
    at the AAP job run, and a PR comment summarizing the result with a link
    to that same job run.
-5. Branch protection blocks merging until `ci/lightwell-test` passes and a
+5. Branch protection blocks merging until `ci/lightwell-dev` passes and a
    reviewer approves; a reviewer then merges the PR into `main`.
 6. GitHub sends a `push` webhook to the same Event Stream; the rulebook
    matches the `refs/heads/main` condition and launches
    `Lightwell - Deploy Prod` with the merge commit SHA.
-7. `playbooks/deploy_prod.yml` deploys the same tested image to `prod`,
-   health-checks it, and reports status back to GitHub (context
-   `ci/lightwell-prod`) the same way.
+7. `playbooks/deploy.yml` rebuilds the image from the merged `main` branch
+   (rather than reusing the dev image), so the merge integrates cleanly
+   with whatever else landed on `main`. The image is tagged with both the
+   merge commit SHA and `latest`, and both tags are pushed. It then deploys
+   the commit-SHA-tagged image to `prod`, health-checks it, and reports
+   status back to GitHub (context `ci/lightwell-prod`) the same way.
 8. If the prod health check fails, the playbook automatically rolls back
    to the previously running image, re-checks health, and reports the
    final outcome -- surfacing as a failed AAP job for alerting if the

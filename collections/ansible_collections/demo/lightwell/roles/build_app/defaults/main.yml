@@ -14,6 +14,7 @@ lightwell_registry_host: packages.redhat.com
 app_image_registry: quay.io/zleblanc
 app_image_name: lightwell-patch-demo-app
 app_image_tag: "{{ app_git_sha | default('dev') }}"
+app_image_latest_tag: "{{ 'latest' if app_environment == 'prod' else app_environment + '-latest' }}"
 app_image_push: true
 
 # Set to false to disable no_log on credential-writing tasks for troubleshooting.

@@ -59,7 +59,7 @@
       containers.podman.podman_tag:
         image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
         target_names:
-          - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_environment }}-latest"
+          - "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_latest_tag }}"
 
     - name: Write the registry auth file to the build host
       when: registry_auth_file is defined
@@ -73,7 +73,7 @@
       when: app_image_push | bool
       loop:
         - "{{ app_image_tag }}"
-        - "{{ app_environment }}-latest"
+        - "{{ app_image_latest_tag }}"
       containers.podman.podman_image:
         name: "{{ app_image_registry }}/{{ app_image_name }}"
         tag: "{{ item }}"
