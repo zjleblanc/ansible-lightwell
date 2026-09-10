@@ -19,7 +19,7 @@
           organization: Autodotes
           job_args:
             extra_vars:
-              app_environment: test
+              app_environment: dev
               app_git_sha: "{{ event.payload.pull_request.head.sha }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
               github_pr_number: "{{ event.payload.pull_request.number }}"

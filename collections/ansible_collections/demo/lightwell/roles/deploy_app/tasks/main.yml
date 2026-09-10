@@ -57,33 +57,29 @@
         path: "{{ registry_auth_tempfile.path }}"
         state: absent
 
-- name: Deploy the application container
-  register: deploy_result
+- name: Write the Quadlet container unit
+  become: true
   containers.podman.podman_container:
     name: "{{ app_container_name }}"
     image: "{{ app_image_registry }}/{{ app_image_name }}:{{ app_image_tag }}"
-    state: started
-    recreate: true
+    state: quadlet
+    quadlet_dir: "{{ quadlet_dir }}"
+    quadlet_options:
+      - "AutoUpdate=registry"
     ports:
       - "{{ app_host_port }}:8080"
-    restart_policy: always
     env:
       PORT: "8080"
       APP_ENVIRONMENT: "{{ app_environment }}"
 
-- name: Generate a systemd unit for the application container
-  when: manage_systemd_unit | bool
-  become: true
-  containers.podman.podman_generate_systemd:
-    name: "{{ app_container_name }}"
-    dest: "{{ systemd_unit_dir }}"
-    restart_policy: always
-    new: true
-
-- name: Reload systemd and enable the generated unit
-  when: manage_systemd_unit | bool
+- name: Reload systemd so the Quadlet generator picks up the unit
   become: true
   ansible.builtin.systemd:
-    name: "container-{{ app_container_name }}.service"
     daemon_reload: true
+
+- name: Restart and enable the application service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ app_service_name }}.service"
+    state: restarted
     enabled: true

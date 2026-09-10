@@ -66,7 +66,7 @@ ansible-lightwell/
 │       ├── galaxy.yml
 │       └── roles/
 │           ├── build_app/     # Build & push the container image via Podman
-│           ├── deploy_app/    # Deploy the container via Podman + systemd
+│           ├── deploy_app/    # Deploy the container via a Podman Quadlet unit
 │           ├── health_check/  # Poll /healthz with retries
 │           ├── rollback/      # Restore the previous image
 │           └── report_status/ # Post commit status back to GitHub via a GitHub App token
@@ -169,9 +169,9 @@ calls -- no reliance on plugins the Decision Environment may not have.
    activation ([`rulebooks/lightwell_webhook.yml`](rulebooks/lightwell_webhook.yml)).
    The rulebook matches the `opened`/`synchronize`/`reopened` condition and
    launches AAP's **Lightwell - Build & Test** job template, which runs
-   [`playbooks/deploy.yml`](playbooks/deploy.yml) with `app_environment: test`:
-   build the image from the PR branch, deploy it to `test` via Podman, and run
-   a strict health check against `/healthz`.
+   [`playbooks/deploy.yml`](playbooks/deploy.yml) with `app_environment: dev`:
+   build the image from the PR branch, deploy it to `dev` via a Podman
+   Quadlet unit, and run a strict health check against `/healthz`.
 3. The playbook's `demo.lightwell.report_status` role posts the result
    back to the PR as a GitHub commit status, authenticating with a token
    minted on demand from a GitHub App installation (via the

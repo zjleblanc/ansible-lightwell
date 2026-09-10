@@ -1,24 +1,26 @@
 # demo.lightwell.deploy_app
 
-Deploys the Lightwell demo application container via Podman on the target
-host, using `podman_generate_systemd` so the container survives reboots.
-Before deploying, it records the currently running image reference to
-`app_previous_image_file` so the `rollback` role can restore it later.
+Deploys the Lightwell demo application container via a Podman Quadlet
+(`.container`) unit on the target host, so systemd manages the container's
+lifecycle and it survives reboots. Before deploying, it records the
+currently running image reference to `app_previous_image_file` so the
+`rollback` role can restore it later.
 
 ## Required variables
 
 | Variable | Description |
 | --- | --- |
-| `app_environment` | `test` or `prod`; used for logging and health check behavior. |
+| `app_environment` | `dev` or `prod`; used for logging and health check behavior. |
 
 ## Common variables (see `defaults/main.yml`)
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `app_container_name` | `lightwell-patch-demo-app-{{ app_environment }}` | Name of the running container. Suffixed with the environment so `test` and `prod` can be deployed to, and coexist on, the same host. |
-| `app_host_port` | `8080` if `test`, `8081` otherwise | Host port mapped to the container's port 8080. Derived from `app_environment` so `test` and `prod` can run side-by-side on the same host without colliding. |
+| `app_container_name` | `lightwell-patch-demo-app` (`lightwell-patch-demo-app-dev` for `dev`) | Name of the running container and the Quadlet unit. Suffixed with `-dev` for the dev environment so `dev` and `prod` can be deployed to, and coexist on, the same host. |
+| `app_host_port` | `8080` if `dev`, `8081` otherwise | Host port mapped to the container's port 8080. Port `8080` is the conventional development port. Derived from `app_environment` so `dev` and `prod` can run side-by-side on the same host without colliding. |
 | `app_previous_image_file` | `/opt/lightwell-demo/{{ app_environment }}/previous_image.txt` | Where the previous image reference is persisted for rollback, namespaced by environment. |
-| `manage_systemd_unit` | `true` | Whether to generate and enable a systemd unit for the container. |
+| `quadlet_dir` | `/etc/containers/systemd` | Directory the Quadlet `.container` file is written to. Podman's systemd generator turns this into a `.service` unit on `daemon-reload`. |
+| `app_service_name` | `{{ app_container_name }}` | Name of the systemd service generated from the Quadlet unit (`{{ app_service_name }}.service`). |
 | `app_image_registry` | `quay.io/zleblanc` | Registry/namespace the image was pushed to by `build_app`. Mirrored here so this role doesn't depend on `group_vars` being applied. |
 | `app_image_name` | `lightwell-patch-demo-app` | Image repository name. |
 | `app_image_tag` | `{{ app_git_sha \| default('dev') }}` | Tag to deploy (typically the git commit SHA built by `build_app`). |

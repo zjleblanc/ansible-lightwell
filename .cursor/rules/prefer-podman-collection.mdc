@@ -22,7 +22,7 @@ structured instead of parsed from text.
 | `login` | `containers.podman.podman_login` |
 | `inspect` (container) | `containers.podman.podman_container_info` |
 | `inspect` (image) | `containers.podman.podman_image_info` |
-| `generate systemd` | `containers.podman.podman_generate_systemd` |
+| `generate systemd` | `containers.podman.podman_container` with `state: quadlet` (see below) |
 
 ## Example
 
@@ -39,6 +39,33 @@ structured instead of parsed from text.
     name: "{{ app_image_registry }}/{{ app_image_name }}"
     tag: "{{ app_image_tag }}"
     push: true
+```
+
+## Quadlet, not `podman_generate_systemd`
+
+`podman generate systemd` (and the `containers.podman.podman_generate_systemd`
+module) is deprecated upstream and fails against a container that doesn't
+already exist. Use `containers.podman.podman_container` with `state: quadlet`
+to write a `.container` unit instead, then reload systemd so Podman's
+generator turns it into a `.service` unit:
+
+```yaml
+- name: Write the Quadlet container unit
+  containers.podman.podman_container:
+    name: my-app
+    image: quay.io/example/my-app:latest
+    state: quadlet
+    quadlet_dir: /etc/containers/systemd
+
+- name: Reload systemd so the Quadlet generator picks up the unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart and enable the application service
+  ansible.builtin.systemd:
+    name: my-app.service
+    state: restarted
+    enabled: true
 ```
 
 ## Accepted exceptions
