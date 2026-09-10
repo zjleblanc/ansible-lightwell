@@ -41,6 +41,7 @@
               app_environment: prod
               app_git_sha: "{{ event.payload.after }}"
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
+            scm_branch: main
 
     - name: Catch and Log
       condition: >-

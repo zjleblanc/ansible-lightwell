@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-10 — Fix double project sync on SCM branch override
+
+### Fixed
+
+- `rulebooks/lightwell_webhook.yml` now explicitly supplies `scm_branch: main`
+  when launching **Lightwell // Deploy Prod**. This ensures the job template
+  still triggers a project sync now that the project's own update-on-launch
+  behavior is disabled.
+
+### Changed
+
+- `docs/aap-setup.md` now documents that **Update Revision on Launch** must be
+  disabled on the AAP project to prevent redundant default-branch syncs that
+  conflict with the rulebook's `scm_branch` overrides. Also updated the
+  Deploy Prod job template documentation to reflect the new `scm_branch: main`
+  override.
+
 ## 2026-09-10 — Surface Pull Request links in the application dashboard
 
 ### Added
