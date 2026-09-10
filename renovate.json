@@ -14,7 +14,7 @@
     {
       "matchManagers": ["pip_requirements"],
       "matchDatasources": ["pypi"],
-      "matchPackageNames": ["PyYAML", "Jinja2"],
+      "matchPackageNames": ["PyYAML", "Jinja2","Flask"],
       "enabled": true,
       "registryUrls": [
         "https://packages.redhat.com/lightwell/python/remediated/simple",

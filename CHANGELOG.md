@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-10 — Fix PR builds checking out `main` instead of the PR's code
+
+### Fixed
+
+- `rulebooks/lightwell_webhook.yml` now supplies `scm_branch: pull/<number>/merge`
+  when launching **Lightwell // Build & Test**. Previously the rulebook
+  only passed `app_git_sha` as an extra var, so the AAP project sync used
+  its default branch (`main`) and the build never actually checked out
+  the PR's changes -- the resulting image was tagged with the PR's SHA
+  but contained `main`'s code.
+
+### Changed
+
+- `docs/aap-setup.md` now documents a `Source Control Refspec` of
+  `+refs/pull/*:refs/remotes/origin/pull/*` on the `ansible-lightwell`
+  project, required for AAP to fetch GitHub's `refs/pull/<number>/merge`
+  refs so the new `scm_branch` override can resolve.
+- `renovate.json` now includes `Flask` in the list of packages monitored
+  for Lightwell remediated patches.
+- `app/config/app_config.yaml` dependency tracking list cleaned up to
+  remove gunicorn, focusing on the core Flask/Jinja2/YAML stack.
+
 ## 2026-09-10 — Refine deployment credential resolution and webhook scoping
 
 ### Changed

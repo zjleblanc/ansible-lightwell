@@ -21,8 +21,6 @@ dependencies:
       role: Renders the dashboard templates you're looking at right now
     - name: Flask
       role: Serves the web dashboard and the /healthz endpoint
-    - name: gunicorn
-      role: Runs the application inside the container in test and prod
 
 patch_timeline:
   - date: "2026-06-01"
