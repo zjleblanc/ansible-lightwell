@@ -23,8 +23,8 @@
       "groupName": "Lightwell remediated patches",
       "commitMessagePrefix": "fix(deps):",
       "commitMessageAction": "apply Lightwell remediated patch to",
-      "commitMessage": "Lightwell patch available: {{depName}} {{currentVersion}} -> {{newVersion}}",
-      "reviewers": ["zleblanc"]
+      "commitMessageExtra": "{{currentVersion}} -> {{newVersion}}",
+      "reviewers": ["zjleblanc"]
     }
   ],
   "hostRules": [

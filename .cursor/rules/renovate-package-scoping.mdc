@@ -1,0 +1,44 @@
+---
+description: Scope Renovate to specific packages via disable-by-default packageRules
+globs: renovate.json
+alwaysApply: false
+---
+
+# Scoping Renovate to Specific Packages
+
+`app/requirements.txt` sets `--index-url` to the private Lightwell registry
+(`packages.redhat.com/lightwell/python/remediated/simple`), which only hosts
+a subset of packages (currently `PyYAML` and `Jinja2`). Renovate treats
+`--index-url` as the primary registry for every package in that file, so any
+package not on the Lightwell registry (e.g. `Flask`, `gunicorn`, `Pygments`)
+gets a 404 and fails lookup, even with `--extra-index-url` pointing at PyPI.
+
+To keep Renovate scoped to only the packages Lightwell actually remediates,
+disable the manager by default and re-enable it per-package with
+`matchPackageNames`. Renovate applies `packageRules` in order and later
+matching rules override earlier ones, so list the disable rule first:
+
+```json
+"packageRules": [
+  {
+    "matchManagers": ["pip_requirements"],
+    "enabled": false
+  },
+  {
+    "matchManagers": ["pip_requirements"],
+    "matchDatasources": ["pypi"],
+    "matchPackageNames": ["PyYAML", "Jinja2"],
+    "enabled": true,
+    "registryUrls": [
+      "https://packages.redhat.com/lightwell/python/remediated/simple",
+      "https://pypi.org/simple/"
+    ]
+  }
+]
+```
+
+Do not "fix" 404s by adding a catch-all `registryUrls` fallback to PyPI for
+every package -- that reintroduces update PRs (e.g. `pytest`, `Flask`) that
+are out of scope for the Lightwell remediation workflow. When adding a new
+package to the Lightwell registry, add its name to `matchPackageNames` in the
+enable rule rather than relaxing the default-disabled rule.
