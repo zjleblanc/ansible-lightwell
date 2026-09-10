@@ -24,7 +24,7 @@
               github_repo_full_name: "{{ event.payload.repository.full_name }}"
               github_pr_number: "{{ event.payload.pull_request.number }}"
 
-    - name: Lightwell // Deploy Prod
+    - name: Launch deploy to prod on pull request merge
       condition: >-
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
@@ -32,7 +32,7 @@
         event.payload.after is defined
       action:
         run_job_template:
-          name: Lightwell - Deploy Prod
+          name: Lightwell // Deploy Prod
           organization: Autodotes
           job_args:
             extra_vars:
