@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-10 — Fix missing requirements.txt in the deployed container
+
+### Fixed
+
+- `app/Containerfile`'s final stage now copies `requirements.txt` into
+  `/opt/app-root/src/` alongside `app.py`. The file was only copied into
+  the discarded builder stage (for `pip install`), so the dashboard's
+  `get_requirements_snippet()` in `app/app.py`, which reads
+  `requirements.txt` at request time to render it with Pygments, raised
+  `FileNotFoundError: [Errno 2] No such file or directory:
+  '/opt/app-root/src/requirements.txt'` on every `/` request in the
+  running container.
+
 ## 2026-09-10 — Open firewall ports for Quadlet app services
 
 ### Added
