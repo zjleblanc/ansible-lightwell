@@ -2,15 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "timezone": "America/Chicago",
-  "schedule": ["before 7am every day"],
+  "schedule": ["before 7am"],
   "enabledManagers": ["pip_requirements"],
   "labels": ["lightwell-patch", "automated"],
   "prConcurrentLimit": 5,
   "packageRules": [
     {
       "matchManagers": ["pip_requirements"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["pip_requirements"],
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["PyYAML", "Jinja2"],
+      "enabled": true,
       "registryUrls": [
         "https://packages.redhat.com/lightwell/python/remediated/simple",
         "https://pypi.org/simple/"
@@ -18,7 +23,7 @@
       "groupName": "Lightwell remediated patches",
       "commitMessagePrefix": "fix(deps):",
       "commitMessageAction": "apply Lightwell remediated patch to",
-      "prTitle": "Lightwell patch available: {{depName}} {{currentVersion}} -> {{newVersion}}",
+      "commitMessage": "Lightwell patch available: {{depName}} {{currentVersion}} -> {{newVersion}}",
       "reviewers": ["zleblanc"]
     }
   ],
