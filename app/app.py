@@ -68,6 +68,7 @@ def create_app() -> Flask:
         return {
             "github_repo": os.environ.get("GITHUB_REPO", ""),
             "app_git_sha": os.environ.get("APP_GIT_SHA", ""),
+            "github_pr_number": os.environ.get("GITHUB_PR_NUMBER", ""),
         }
 
     @app.get("/")

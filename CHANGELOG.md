@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-10 — Surface Pull Request links in the application dashboard
+
+### Added
+
+- `demo.lightwell.deploy_app` now passes `GITHUB_PR_NUMBER` into the deployed
+  container as an environment variable, alongside the repository and SHA.
+- `app/app.py` reads `GITHUB_PR_NUMBER` from the environment and makes it
+  available to templates.
+
+### Changed
+
+- `app/templates/dashboard.html` now links the version badge to the GitHub
+  Pull Request (e.g. `PR #12`) instead of the commit SHA when a dev build
+  is triggered by a PR, providing easier navigation back to the code review.
+
 ## 2026-09-10 — Fix PR builds checking out `main` instead of the PR's code
 
 ### Fixed

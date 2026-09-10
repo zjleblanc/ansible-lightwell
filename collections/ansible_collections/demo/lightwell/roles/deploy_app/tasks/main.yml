@@ -73,6 +73,7 @@
       APP_ENVIRONMENT: "{{ app_environment }}"
       GITHUB_REPO: "{{ github_repo_full_name | default('') }}"
       APP_GIT_SHA: "{{ app_git_sha | default('') }}"
+      GITHUB_PR_NUMBER: "{{ github_pr_number | default('') }}"
 
 - name: Reload systemd so the Quadlet generator picks up the unit
   become: true
