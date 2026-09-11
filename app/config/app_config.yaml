@@ -26,19 +26,17 @@ dependencies:
       role: Syntax-highlights the requirements.txt snippet below
 
 patch_timeline:
-  - date: "2026-06-01"
-    version: "1.0.0"
-    event: "Initial release. Dependencies pinned to standard PyPI releases."
-  - date: "2026-07-08"
-    version: "n/a"
-    event: "Red Hat & IBM announce the commercial launch of Lightwell Network."
+  - date: "2026-09-11"
+    version: "1.0.4"
+    event: Updated the UI and initiated a demo test.
   - date: "2026-08-01"
     version: "n/a"
     event: >-
       Repository configured to resolve Python dependencies through the
       Lightwell Remediated index.
-  - date: "in progress"
+  - date: "2026-07-08"
     version: "n/a"
-    event: >-
-      Renovate is monitoring the Lightwell Remediated index for new .rhlw
-      patches to PyYAML and Jinja2.
+    event: "Red Hat & IBM announce the commercial launch of Lightwell Network."
+  - date: "2026-06-01"
+    version: "1.0.0"
+    event: "Initial release. Dependencies pinned to standard PyPI releases."
