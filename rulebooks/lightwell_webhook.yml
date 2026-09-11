@@ -55,7 +55,7 @@
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
         event.payload.head_commit is defined and
-        event.payload.head_commit.message is match("(?i)reset.*")
+        event.payload.head_commit.message is match("(?i)reset python.*")
       action:
         run_job_template:
           name: Lightwell Python // Build & Test
@@ -73,7 +73,7 @@
         event.payload.ref is defined and
         event.payload.ref == "refs/heads/main" and
         event.payload.head_commit is defined and
-        event.payload.head_commit.message is match("(?i)reset.*")
+        event.payload.head_commit.message is match("(?i)reset java.*")
       action:
         run_job_template:
           name: Lightwell Java // Build & Test
