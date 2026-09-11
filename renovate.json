@@ -37,5 +37,13 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["security", "lightwell-patch"]
-  }
+  },
+  "bumpVersions": [
+    {
+      "name": "Bump app version on dependency update",
+      "filePatterns": ["app/config/app_config.yaml"],
+      "matchStrings": ["version:\\s*\"(?<version>\\d+\\.\\d+\\.\\d+)\""],
+      "bumpType": "patch"
+    }
+  ]
 }

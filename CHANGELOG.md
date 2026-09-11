@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-11 — Auto-bump app version on Renovate dependency updates
+
+### Added
+
+- `renovate.json` gains a `bumpVersions` rule that patch-bumps the
+  `version` field in `app/config/app_config.yaml` (e.g. `1.0.2` ->
+  `1.0.3`) as part of the same commit whenever Renovate opens a
+  dependency-update PR, so the app version now reflects each Lightwell
+  patch without a manual edit.
+
 ## 2026-09-10 — Fix `scm_branch`/`app_git_sha` mismatch for reset and prod deploy pushes
 
 ### Fixed
