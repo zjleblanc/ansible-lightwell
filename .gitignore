@@ -10,6 +10,10 @@ __pycache__/
 *.retry
 .ansible/
 
+# Java / Maven
+target/
+*.class
+
 # Third-party collections installed via
 # `ansible-galaxy collection install -r collections/requirements.yml`.
 # Our own demo.lightwell collection source stays tracked.
@@ -19,6 +23,7 @@ collections/ansible_collections/*
 # Secrets and local overrides -- Lightwell credentials, .netrc files, and
 # vault secrets must never be committed to this repository.
 .netrc
+settings.xml
 *.vault
 vault_pass.txt
 .env

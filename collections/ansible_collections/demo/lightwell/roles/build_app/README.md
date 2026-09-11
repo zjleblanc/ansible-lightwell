@@ -11,11 +11,11 @@ selects which `apps/<app_type>/` directory is built.
 Authenticates to the Lightwell Network remediated repository at build
 time by dispatching to `tasks/auth_{{ app_type }}.yml`, which writes the
 credential format that app type's package manager expects (a `.netrc`
-for Python's pip) into the build context; it's removed after the build,
-so credentials never reach the pushed image (the Containerfile's builder
-stage that briefly holds it is discarded by the multi-stage build). Add
-`tasks/auth_<type>.yml` when introducing a new app type with different
-build-time authentication (e.g. a Maven `settings.xml`).
+for Python's pip, a `settings.xml` `<server>` entry for Java's Maven) into
+the build context; it's removed after the build, so credentials never
+reach the pushed image (the Containerfile's builder stage that briefly
+holds it is discarded by the multi-stage build). Add `tasks/auth_<type>.yml`
+when introducing a new app type with different build-time authentication.
 
 ## Required variables
 

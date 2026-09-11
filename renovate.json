@@ -33,12 +33,13 @@
       "enabled": false
     },
     {
-      "description": "Enable once apps/java/ exists and its Lightwell-remediated package names are known -- mirror the pip_requirements rule above.",
       "matchManagers": ["maven"],
       "matchFileNames": ["apps/java/**"],
-      "enabled": false,
+      "matchDatasources": ["maven"],
+      "matchPackageNames": ["org.json:json", "org.springframework:spring-core"],
+      "enabled": true,
       "registryUrls": [
-        "https://packages.redhat.com/lightwell/java/remediated/simple",
+        "https://packages.redhat.com/lightwell/java/remediated",
         "https://repo.maven.apache.org/maven2/"
       ],
       "groupName": "Lightwell remediated patches",
@@ -63,6 +64,12 @@
     {
       "name": "Bump python app version on dependency update",
       "filePatterns": ["apps/python/config/app_config.yaml"],
+      "matchStrings": ["version:\\s*\"(?<version>\\d+\\.\\d+\\.\\d+)\""],
+      "bumpType": "patch"
+    },
+    {
+      "name": "Bump java app version on dependency update",
+      "filePatterns": ["apps/java/src/main/resources/config/app_config.yaml"],
       "matchStrings": ["version:\\s*\"(?<version>\\d+\\.\\d+\\.\\d+)\""],
       "bumpType": "patch"
     }

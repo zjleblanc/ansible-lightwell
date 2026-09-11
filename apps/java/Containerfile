@@ -1,0 +1,35 @@
+# Lightwell Demo application image.
+# Authenticates via a build-context "settings.xml" removed within the same RUN.
+# The builder stage is discarded by the multi-stage build, so credentials
+# never reach the final image.
+
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest AS builder
+
+# Root avoids a UID/GID mismatch between WORKDIR (created as root) and the
+# image's inherited non-root default user; harmless since this stage is
+# discarded by the multi-stage build.
+USER 0
+
+WORKDIR /opt/app-root/src
+
+COPY pom.xml settings.xml ./
+COPY src/ src/
+
+RUN mvn --batch-mode -s settings.xml package -DskipTests && rm -f settings.xml
+
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+
+WORKDIR /deployments
+
+COPY --from=builder /opt/app-root/src/target/app.jar ./app.jar
+
+ENV PORT=8080
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fs http://localhost:8080/healthz || exit 1
+
+USER 1001
+
+CMD ["java", "-jar", "/deployments/app.jar"]

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.lightwell</groupId>
+  <artifactId>lightwell-demo</artifactId>
+  <version>2.0.1</version>
+  <packaging>jar</packaging>
+
+  <name>lightwell-demo</name>
+  <description>Lightwell Patch Pipeline Demo App -- Java</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <org.json.version>20240303</org.json.version>
+  </properties>
+
+  <!--
+    Lightwell Remediated repository is the primary source for org.json:json
+    and org.springframework:spring-core; Maven Central is the fallback for
+    every other dependency. Ordered so Maven checks Lightwell first.
+  -->
+  <repositories>
+    <repository>
+      <id>lightwell-remediated</id>
+      <url>https://packages.redhat.com/lightwell/java/remediated</url>
+    </repository>
+    <repository>
+      <id>central</id>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>${org.json.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <!-- Shades its own org.json.JSONObject, colliding with our tracked org.json:json dependency. -->
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>app</finalName>
+    <!--
+      Exposes this file itself as a classpath resource (alongside the
+      normal src/main/resources), so the dashboard can read and display it
+      the same way apps/python reads its own requirements.txt at runtime.
+    -->
+    <resources>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <targetPath>.</targetPath>
+        <includes>
+          <include>pom.xml</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

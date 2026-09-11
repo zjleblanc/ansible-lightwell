@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="layout (content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="|RHLW App - ${#strings.toUpperCase(appEnv)}|">RHLW App</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body th:attr="data-env=${appEnv}">
+    <div class="glow-well" aria-hidden="true"></div>
+    <header class="site-header">
+        <div class="brand">
+            <span class="brand-mark">&#128294;</span>
+            <span class="brand-name">Lightwell</span>
+            <span class="brand-sub">Patch Pipeline Demo</span>
+        </div>
+        <nav>
+            <a th:href="@{/}">Dashboard</a>
+            <a th:href="@{/healthz}">Health</a>
+            <a th:href="@{/api/config}">Config API</a>
+            <a th:if="${not #strings.isEmpty(githubRepo)}"
+               th:href="|https://github.com/${githubRepo}|" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </nav>
+    </header>
+    <main th:replace="${content}">Content placeholder</main>
+    <footer>
+        <p>Rendered with Thymeleaf &middot; Config loaded with SnakeYAML &middot; Patched by Red Hat &amp; IBM Lightwell</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+</body>
+</html>

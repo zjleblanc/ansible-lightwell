@@ -1,0 +1,39 @@
+---
+service:
+  name: Lightwell Patch Pipeline Demo
+  description: >-
+    A Spring Boot dashboard demonstrating automated Java dependency patching
+    sourced from the Red Hat & IBM Lightwell Network, orchestrated end-to-end
+    with Renovate and Ansible Automation Platform.
+  version: "1.0.0"
+
+patch_source:
+  name: Lightwell Remediated Index
+  url: https://packages.redhat.com/lightwell/java/remediated
+  provider: Red Hat & IBM
+
+dependencies:
+  tracked:
+    - name: snakeyaml
+      role: Loads this dashboard's configuration from this very YAML file
+    - name: thymeleaf
+      role: Renders the dashboard templates you're looking at right now
+    - name: spring-boot
+      role: Provides the embedded web server and auto-configuration
+    - name: spring-core
+      role: Powers the Spring dependency injection framework underpinning this dashboard
+    - name: json
+      role: Serializes JSON for the /healthz and /api/config endpoints
+
+patch_timeline:
+  - date: "2026-09-11"
+    version: "1.0.0"
+    event: Initial release of the Java dashboard, mirroring the Python demo.
+  - date: "2026-09-11"
+    version: "n/a"
+    event: >-
+      Repository configured to resolve Java dependencies through the
+      Lightwell Remediated Maven index.
+  - date: "2026-07-08"
+    version: "n/a"
+    event: "Red Hat & IBM announce the commercial launch of Lightwell Network."

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(~{::main})}">
+<head><title>Dashboard</title></head>
+<body>
+<main>
+
+<section class="hero">
+    <h1 th:text="${service.name}">Service Name</h1>
+    <p class="tagline" th:text="${service.description}">Description</p>
+    <span class="version-pill" th:text="|v${service.version}|">v0.0.0</span>
+    <a th:if="${not #strings.isEmpty(appGitSha) and not #strings.isEmpty(githubPrNumber)}"
+       th:href="|https://github.com/${githubRepo}/pull/${githubPrNumber}|"
+       target="_blank" rel="noopener noreferrer" class="sha-pill"
+       th:title="|Dev Build - Pull Request #${githubPrNumber}|">
+        <span th:text="|PR #${githubPrNumber}|">PR #0</span>
+    </a>
+    <a th:if="${not #strings.isEmpty(appGitSha) and #strings.isEmpty(githubPrNumber)}"
+       th:href="|https://github.com/${githubRepo}/commit/${appGitSha}|"
+       target="_blank" rel="noopener noreferrer" class="sha-pill"
+       th:title="|Deployed commit ${appGitSha}|">
+        <span th:text="${#strings.substring(appGitSha, 0, 7)}">abcdef1</span>
+    </a>
+</section>
+
+<section class="grid">
+    <div class="card card-wide">
+        <h2>Dependency Status</h2>
+        <ul class="package-list">
+            <li th:each="pkg : ${packageVersions}">
+                <div>
+                    <div class="pkg-header">
+                        <span class="pkg-name" th:text="${pkg.name}">name</span>
+                        <span class="pkg-version" th:text="${pkg.version}">0.0.0</span>
+                        <span class="rhlw-tag" th:if="${pkg.lightwellPatchId != null}"
+                              th:text="${pkg.lightwellPatchId}" title="Lightwell remediation identifier">00000</span>
+                    </div>
+                    <span class="pkg-role" th:if="${not #strings.isEmpty(pkg.role)}" th:text="${pkg.role}">role</span>
+                </div>
+                <span class="badge badge-patched" th:if="${pkg.lightwell}">Lightwell</span>
+                <span class="badge badge-standard" th:unless="${pkg.lightwell}">Maven Central</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Patch Source</h2>
+        <p class="patch-source-name" th:text="${patchSource.name}">Patch Source</p>
+        <p class="patch-source-provider" th:text="${patchSource.provider}">Provider</p>
+        <a href="#" th:href="${patchSource.url}" target="_blank" rel="noopener noreferrer"
+           class="patch-source-url" th:text="${patchSource.url}">url</a>
+        <p class="patch-source-count"
+           th:text="|${lightwellCount} / ${trackedCount} tracked packages sourced from Lightwell|">0 / 0</p>
+    </div>
+</section>
+
+<section class="code-panel">
+    <h2>apps/java/pom.xml</h2>
+    <div class="code-snippet">
+        <pre><code class="language-markup" th:text="${pomSnippet}">pom.xml</code></pre>
+    </div>
+</section>
+
+<section class="timeline">
+    <h2>Patch Timeline</h2>
+    <ol>
+        <li th:each="entry : ${patchTimeline}">
+            <span class="timeline-date" th:text="${entry.date}">date</span>
+            <span class="timeline-version" th:text="${entry.version}">version</span>
+            <span class="timeline-event" th:text="${entry.event}">event</span>
+        </li>
+    </ol>
+</section>
+
+<p class="timestamp"
+   th:text="|Last rendered: ${#temporals.format(now, 'yyyy-MM-dd HH:mm:ss')} UTC|">Last rendered</p>
+
+</main>
+</body>
+</html>
