@@ -10,4 +10,4 @@ collections:
   - name: ansible.posix
     version: ">=1.6.0"
   - name: ansible.eda
-    version: ">=2.4.0" # only needed for local ansible-rulebook testing, see eda/README.md
+    version: ">=2.4.0" # only needed for local ansible-rulebook testing, see rulebooks/README.md

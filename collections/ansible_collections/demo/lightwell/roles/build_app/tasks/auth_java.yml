@@ -1,0 +1,11 @@
+---
+# Placeholder for the Java app type. Maven resolves the Lightwell
+# Remediated index via a settings.xml <server> credential rather than a
+# netrc file -- implement that here (writing to
+# "{{ remote_build_dir.path }}/settings.xml") when apps/java/ is added.
+- name: Fail until Java build authentication is implemented
+  ansible.builtin.fail:
+    msg: >-
+      app_type=java has no build authentication implemented yet. Add a
+      Maven settings.xml-writing task to
+      roles/build_app/tasks/auth_java.yml alongside the apps/java/ app.

@@ -1,17 +1,21 @@
 # demo.lightwell.build_app
 
-Builds and pushes the Lightwell demo application container image using
+Builds and pushes a Lightwell demo application container image using
 rootless Podman on the demo host (inventory group `rhlw`), which also
 hosts the `dev` and `prod` deployments. The application source is
 synced from the controller to a temporary directory on that host via
 `ansible.posix.synchronize`, since the host running the build is a
-separate machine from wherever the playbook itself runs.
+separate machine from wherever the playbook itself runs. `app_type`
+selects which `apps/<app_type>/` directory is built.
 
 Authenticates to the Lightwell Network remediated repository at build
-time via a `.netrc` written into the build context and removed after the
-build, so credentials never reach the pushed image (the Containerfile's
-builder stage that briefly holds it is discarded by the multi-stage
-build).
+time by dispatching to `tasks/auth_{{ app_type }}.yml`, which writes the
+credential format that app type's package manager expects (a `.netrc`
+for Python's pip) into the build context; it's removed after the build,
+so credentials never reach the pushed image (the Containerfile's builder
+stage that briefly holds it is discarded by the multi-stage build). Add
+`tasks/auth_<type>.yml` when introducing a new app type with different
+build-time authentication (e.g. a Maven `settings.xml`).
 
 ## Required variables
 
@@ -24,10 +28,11 @@ build).
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `app_source_dir` | `{{ playbook_dir }}/../app` | Path to the checked-out application source. |
-| `lightwell_registry_host` | `packages.redhat.com` | Lightwell Network host used in the generated `.netrc`. |
-| `app_image_registry` | `quay.io/lightwell-demo` | Registry/namespace the image is pushed to. |
-| `app_image_name` | `lightwell-patch-demo-app` | Image repository name. |
+| `app_type` | `python` | Selects which `apps/<app_type>/` directory to build and derives the image name. |
+| `app_source_dir` | `{{ playbook_dir }}/../apps/{{ app_type }}` | Path to the checked-out application source. |
+| `lightwell_registry_host` | `packages.redhat.com` | Lightwell Network host used in the generated credential file. |
+| `app_image_registry` | `quay.io/zleblanc` | Registry/namespace the image is pushed to. |
+| `app_image_name` | `lightwell-{{ app_type }}-demo` | Image repository name, matching the `lightwell-<type>-demo` Quay registry naming convention. |
 | `app_image_tag` | `{{ app_git_sha \| default('dev') }}` | Primary tag for the built image (typically the git commit SHA). |
 | `app_image_push` | `true` | Whether to push the built image to the registry. |
 
@@ -47,6 +52,7 @@ it's used to compute the `<environment>-latest` convenience tag.
   roles:
     - role: demo.lightwell.build_app
       vars:
+        app_type: python
         app_environment: dev
         app_image_tag: "{{ app_git_sha }}"
 ```

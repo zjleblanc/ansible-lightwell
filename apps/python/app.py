@@ -68,7 +68,7 @@ def get_package_versions(tracked_deps: list[dict[str, Any]] | None = None) -> li
 
 
 def get_requirements_snippet() -> dict[str, str]:
-    """Render app/requirements.txt as syntax-highlighted HTML via Pygments."""
+    """Render apps/python/requirements.txt as syntax-highlighted HTML via Pygments."""
     source = REQUIREMENTS_PATH.read_text(encoding="utf-8")
     # No dedicated pip-requirements lexer ships with Pygments; "properties"
     # (key=value, # comments) highlights the name==version syntax closely enough.

@@ -1,6 +1,10 @@
-# Lightwell Patch Pipeline Demo App
+# Lightwell Patch Pipeline Demo App -- Python
 
-A small Flask dashboard used to demo the Lightwell + Ansible patch pipeline.
+A small Flask dashboard used to demo the Lightwell + Ansible patch
+pipeline for `app_type: python`. This is one of potentially several
+`apps/<app_type>/` applications served by the same pipeline -- see the
+root [README.md](../../README.md#multiple-apps-one-pipeline) for how the
+`app_type` switch works across app types.
 
 - **PyYAML** loads `config/app_config.yaml` -- service metadata, feature
   flags, and a patch timeline -- at startup.
@@ -11,14 +15,14 @@ A small Flask dashboard used to demo the Lightwell + Ansible patch pipeline.
 - **Pygments** syntax-highlights `requirements.txt` for display on the
   dashboard.
 
-See the root [README.md](../README.md) for the full patch pipeline story
-(Renovate, EDA, AAP) and [docs/aap-setup.md](../docs/aap-setup.md) for AAP
-resource setup.
+See the root [README.md](../../README.md) for the full patch pipeline
+story (Renovate, EDA, AAP) and [docs/aap-setup.md](../../docs/aap-setup.md)
+for AAP resource setup.
 
 ## Directory layout
 
 ```
-app/
+apps/python/
 ├── app.py                  # Flask application (routes + helpers)
 ├── Containerfile           # Multi-stage UBI9/Python 3.12 image
 ├── requirements.txt        # Runtime deps (Lightwell index primary, PyPI fallback)
@@ -46,7 +50,7 @@ app/
 ## Local development
 
 ```bash
-cd app
+cd apps/python
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 python app.py
@@ -61,19 +65,20 @@ package index, with PyPI as a fallback. If you need to resolve `.rhlw`
 packages locally (outside of a container build), authenticate via
 `~/.netrc` with your Lightwell Network service account credentials. Never
 commit that file -- see the root README's
-[credential locations table](../README.md#where-the-lightwell-service-account-credentials-must-live)
+[credential locations table](../../README.md#where-the-lightwell-service-account-credentials-must-live)
 for where these secrets are allowed to live.
 
 ## Running tests
 
 ```bash
-cd app
+cd apps/python
 pytest
 ```
 
-`pytest.ini` points `pytest` at the `tests/` directory and adds `app/` to
-`pythonpath`. The suite covers the dashboard returning 200, `/healthz`
-reporting `ok`, and `/api/config` returning service metadata.
+`pytest.ini` points `pytest` at the `tests/` directory and adds
+`apps/python/` to `pythonpath`. The suite covers the dashboard returning
+200, `/healthz` reporting `ok`, and `/api/config` returning service
+metadata.
 
 ## Container build
 

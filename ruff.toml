@@ -1,6 +1,6 @@
 target-version = "py312"
 line-length = 100
-src = ["app"]
+src = ["apps/python"]
 exclude = [
   ".venv",
   "__pycache__",
@@ -14,7 +14,7 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
-"app/tests/*" = ["S101"] # assert usage is expected in pytest test files
+"apps/python/tests/*" = ["S101"] # assert usage is expected in pytest test files
 
 [format]
 quote-style = "double"

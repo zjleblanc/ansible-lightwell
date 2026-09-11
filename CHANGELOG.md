@@ -1,5 +1,66 @@
 # Changelog
 
+## 2026-09-11 — Restructure repo to support multiple app types
+
+### Added
+
+- `app_type` variable (default `python`) is now the single switch that
+  selects which `apps/<app_type>/` application the pipeline builds,
+  deploys, health-checks, and reports status for. Every role default,
+  the deploy/rollback playbooks, and the rulebook are keyed off it
+  instead of a hardcoded Python app.
+- `app_port_map` in `inventory/group_vars/all.yml` (and duplicated as a
+  role-default fallback in `deploy_app`/`health_check`/`rollback`) maps
+  `(app_type, app_environment)` to a host port, so multiple apps and
+  environments coexist on the same demo host without colliding
+  (`python`: `8080`/`8081`, `java`: `8082`/`8083` reserved).
+- `demo.lightwell.build_app` now dispatches Lightwell credential-writing
+  to `tasks/auth_{{ app_type }}.yml`, since different ecosystems need
+  different credential file formats (a `.netrc` for Python's pip;
+  `auth_java.yml` added as a placeholder that fails with a clear message
+  until Java's Maven `settings.xml` authentication is implemented).
+- `rulebooks/lightwell_webhook.yml` gains a Java rule pair (build & test,
+  demo reset, deploy prod) alongside the existing Python rules, each
+  passing `app_type` and targeting `Lightwell Java // ...` job templates,
+  so the pipeline is ready for `apps/java/` as soon as it and its AAP job
+  templates exist.
+- `renovate.json` adds `maven` to `enabledManagers` and
+  `additionalBranchPrefix: "{{parentDir}}-"` to split PRs per app
+  directory, plus a disabled placeholder `packageRules` entry scoped to
+  `apps/java/**` to enable once Java's remediated packages are known.
+
+### Changed
+
+- Moved `app/` to `apps/python/` (`git mv`) so the repository can host one
+  application directory per language. `apps/java/` is not created yet.
+- All `demo.lightwell` collection role defaults (`build_app`,
+  `deploy_app`, `health_check`, `rollback`, `report_status`) now derive
+  `app_source_dir`, `app_image_name`, `app_container_name`,
+  `app_host_port`, `app_previous_image_file`, and
+  `github_status_context` from `app_type` instead of hardcoding
+  `lightwell-patch-demo-app`. Image/container naming now follows
+  `lightwell-<type>-demo`, matching the `lightwell-<type>-demo` Quay
+  registry convention.
+- `playbooks/deploy.yml` path-filtering (both the PR and push code paths)
+  now matches `^apps/{{ app_type }}/` instead of `^app/`, and its GitHub
+  status descriptions/failure messages mention `app_type`.
+- `renovate.json`'s Python `packageRules` are now scoped with
+  `matchFileNames: ["apps/python/**"]`; `bumpVersions.filePatterns` points
+  at `apps/python/config/app_config.yaml`.
+- `.pre-commit-config.yaml` (ruff hooks), `ruff.toml` (`src`,
+  per-file-ignores), and `.ansible-lint` (`exclude_paths`) updated from
+  `app/` to `apps/python/`/`apps/`.
+- Rewrote `README.md` and `docs/aap-setup.md` for the multi-app
+  architecture: app-type-agnostic framing, a "Multiple apps, one
+  pipeline" / "Adding a new app type" section, per-app-type job template
+  guidance, and updated GitHub status check names
+  (`ci/lightwell-<type>-<env>`).
+- Updated `apps/python/README.md`, all `demo.lightwell` role READMEs,
+  `rulebooks/README.md`, the collection README, and
+  `.cursor/rules/aap-github-integration.mdc` /
+  `.cursor/rules/renovate-package-scoping.mdc` to describe the
+  `app_type`-driven, multi-app pattern.
+
 ## 2026-09-11 — Differentiate dev/prod dashboard branding
 
 ### Added

@@ -5,12 +5,19 @@ events in this pipeline. Rather than each AAP job template exposing its
 own native webhook receiver, GitHub sends every `pull_request` and `push`
 event to one AAP **Event Stream**, which forwards matching events into a
 **Rulebook Activation** running this rulebook. The rulebook inspects the
-payload and launches the correct job template:
+payload and launches the matching job template **once per app type**,
+passing `app_type` as an extra var:
 
 | Event | Condition | Launches |
 | --- | --- | --- |
-| `pull_request` (opened/synchronize/reopened) | PR is present | `Lightwell - Build & Test` |
-| `push` to `refs/heads/main` | ref is main, not a deletion | `Lightwell - Deploy Prod` |
+| `pull_request` (opened/synchronize/reopened) | PR is present | `Lightwell <Type> // Build & Test` for every app type |
+| `push` to `refs/heads/main` | ref is main, not a deletion | `Lightwell <Type> // Deploy Prod` for every app type |
+
+Every app type gets its own rule per event (currently Python; Java's
+rules are already present and will activate once its job templates exist
+in AAP -- see [`docs/aap-setup.md`](../docs/aap-setup.md#adding-the-java-job-templates)).
+Adding a further app type is a copy of the relevant rule pair with
+`app_type` and the job template name updated to match.
 
 The rulebook does not filter by changed file path -- see below.
 
@@ -24,10 +31,13 @@ would be available to a Rulebook Activation's plugins. That made the
 filter unusable outside of local testing.
 
 Path filtering now happens entirely in
-[`playbooks/deploy.yml`](../playbooks/deploy.yml): both the PR (test) and
+[`playbooks/deploy.yml`](../playbooks/deploy.yml): both the PR (dev) and
 push (prod) code paths call the GitHub API to list changed files and exit
-early via `meta: end_play` when nothing under `app/` was touched. See the
-root [`README.md`](../README.md#path-based-filtering-only-deploy-when-app-changes)
+early via `meta: end_play` when nothing under that run's own
+`apps/{{ app_type }}/` was touched. This means every app type's job is
+launched for every event, but only the app type(s) whose files actually
+changed do any real build/deploy work. See the root
+[`README.md`](../README.md#path-based-filtering-only-deploy-when-an-apps-own-files-change)
 for details.
 
 Full setup instructions (creating the Event Stream, its HMAC credential,

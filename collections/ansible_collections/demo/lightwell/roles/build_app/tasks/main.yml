@@ -35,15 +35,8 @@
         dest: "{{ remote_build_dir.path }}/"
         recursive: true
 
-    - name: Write Lightwell Network credentials to the build-context netrc file
-      no_log: "{{ build_app_no_log }}"
-      ansible.builtin.copy:
-        dest: "{{ remote_build_dir.path }}/.netrc"
-        content: |
-          machine {{ lightwell_registry_host }}
-          login {{ lightwell_username }}
-          password {{ lightwell_password }}
-        mode: "0600"
+    - name: Write Lightwell Network credentials to the build context
+      ansible.builtin.include_tasks: "auth_{{ app_type | default('python') }}.yml"
 
     - name: Build the application container image
       register: build_result

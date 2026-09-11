@@ -7,7 +7,7 @@
     github_token: "{{ generic_token | default(undefined) }}"
 
   tasks:
-    - name: Check whether the PR touches app/ files (Dev only)
+    - name: Check whether the PR touches this app's files (Dev only)
       when:
         - app_environment == 'dev'
         - github_token is defined
@@ -24,11 +24,11 @@
               Accept: application/vnd.github+json
             status_code: [200]
 
-        - name: End play early when no app/ files were changed
-          when: pr_files_result.json | map(attribute='filename') | select('match', '^app/') | list | length == 0
+        - name: End play early when no files changed under apps/{{ app_type }}
+          when: pr_files_result.json | map(attribute='filename') | select('match', '^apps/' ~ app_type ~ '/') | list | length == 0
           vars:
             github_status_state: success
-            github_status_description: "Skipped — no app/ changes detected"
+            github_status_description: "Skipped — no apps/{{ app_type }} changes detected"
           block:
             - name: Post a success status so the PR check is not left pending
               ansible.builtin.include_role:
@@ -37,7 +37,7 @@
             - name: End play
               ansible.builtin.meta: end_play
 
-    - name: Check whether the push commit touches app/ files (Prod only)
+    - name: Check whether the push commit touches this app's files (Prod only)
       when:
         - app_environment == 'prod'
         - github_token is defined
@@ -54,11 +54,11 @@
               Accept: application/vnd.github+json
             status_code: [200]
 
-        - name: End play early when no app/ files were changed
-          when: commit_files_result.json.files | map(attribute='filename') | select('match', '^app/') | list | length == 0
+        - name: End play early when no files changed under apps/{{ app_type }}
+          when: commit_files_result.json.files | map(attribute='filename') | select('match', '^apps/' ~ app_type ~ '/') | list | length == 0
           vars:
             github_status_state: success
-            github_status_description: "Skipped — no app/ changes detected"
+            github_status_description: "Skipped — no apps/{{ app_type }} changes detected"
           block:
             - name: Post a success status so the commit check is not left pending
               ansible.builtin.include_role:
@@ -70,7 +70,7 @@
     - name: Mark the GitHub status check as pending
       vars:
         github_status_state: pending
-        github_status_description: "Building application image for {{ app_environment }}"
+        github_status_description: "Building {{ app_type | default('python') }} application image for {{ app_environment }}"
       ansible.builtin.include_role:
         name: demo.lightwell.report_status
 
@@ -83,14 +83,16 @@
         - name: Report the build failure to GitHub so the check does not hang pending
           vars:
             github_status_state: failure
-            github_status_description: "Build failed for {{ app_environment }} -- see AAP job output for details"
+            github_status_description: "Build failed for {{ app_type | default('python') }} in {{ app_environment }} -- see AAP job output for details"
           ansible.builtin.include_role:
             name: demo.lightwell.report_status
 
         - name: Re-raise the build failure so the AAP job is marked failed
           ansible.builtin.fail:
             msg: >-
-              Build failed for {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
+              Build failed for {{ app_image_registry | default('quay.io/zleblanc') }}/{{
+                app_image_name | default('lightwell-' + (app_type | default('python')) + '-demo') }}:{{
+                app_image_tag | default(app_git_sha | default('dev')) }}.
               See the task output above for the underlying error.
 
 - name: Deploy and verify the Lightwell demo application
@@ -105,7 +107,7 @@
       when: app_environment == 'prod'
       vars:
         github_status_state: pending
-        github_status_description: "Deploying to {{ app_environment }}"
+        github_status_description: "Deploying {{ app_type | default('python') }} to {{ app_environment }}"
       ansible.builtin.include_role:
         name: demo.lightwell.report_status
 
@@ -145,7 +147,7 @@
           vars:
             github_status_state: "{{ 'success' if health_check_passed else 'failure' }}"
             github_status_description: >-
-              {{ app_environment | capitalize }} deployment {{ 'healthy' if health_check_passed
+              {{ (app_type | default('python') | capitalize) }} {{ app_environment }} deployment {{ 'healthy' if health_check_passed
                  else (deploy_failure_reason | default(
                    'failed -- rolled back' if (app_environment == 'prod' and not (initial_health_check_passed | default(true)) and rollback_image is defined)
                    else 'failed health checks')) }}
@@ -155,12 +157,14 @@
         - name: Surface the outcome for AAP job output
           ansible.builtin.debug:
             msg: >-
-              {{ app_environment | capitalize }} deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
-              for image {{ app_image_registry | default('quay.io/zleblanc') }}/{{ app_image_name | default('lightwell-patch-demo-app') }}:{{ app_image_tag | default(app_git_sha | default('dev')) }}.
+              {{ (app_type | default('python') | capitalize) }} {{ app_environment }} deployment {{ 'PASSED' if health_check_passed else 'FAILED' }}
+              for image {{ app_image_registry | default('quay.io/zleblanc') }}/{{
+                app_image_name | default('lightwell-' + (app_type | default('python')) + '-demo') }}:{{
+                app_image_tag | default(app_git_sha | default('dev')) }}.
 
     - name: Fail the play if unhealthy after any rollback attempt
       when: not health_check_passed
       ansible.builtin.fail:
         msg: >-
-          {{ app_environment | capitalize }} deployment
+          {{ (app_type | default('python') | capitalize) }} {{ app_environment }} deployment
           {{ deploy_failure_reason | default('failed health checks') }}.

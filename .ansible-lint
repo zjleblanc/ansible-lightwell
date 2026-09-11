@@ -4,7 +4,7 @@ profile: production
 exclude_paths:
   - .git/
   - .github/
-  - app/
+  - apps/
   # Ignore third-party collections installed by galaxy.
   # Our own demo.lightwell collection is linted normally.
   - collections/ansible_collections/containers/
