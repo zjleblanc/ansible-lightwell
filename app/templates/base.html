@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Lightwell Patch Pipeline Demo{% endblock %}</title>
+    <title>{% block title %}RHLW App - {{ app_env | upper }}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-env="{{ app_env }}">
     <div class="glow-well" aria-hidden="true"></div>
     <header class="site-header">
         <div class="brand">
-            <span class="brand-mark">&#9679;</span>
+            <span class="brand-mark">&#128294;</span>
             <span class="brand-name">Lightwell</span>
             <span class="brand-sub">Patch Pipeline Demo</span>
         </div>

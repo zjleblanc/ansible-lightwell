@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-11 — Differentiate dev/prod dashboard branding
+
+### Added
+
+- `app/app.py` context processor now exposes `app_env` (from the
+  `APP_ENVIRONMENT` env var already set by the `deploy_app` Ansible role,
+  defaulting to `prod`) to every template.
+- `app/static/style.css` gains a `body[data-env="dev"]` override that
+  swaps the app's red accent (`--lw-red`, `--lw-glow`) for coral, so dev
+  deployments are visually distinct from prod at a glance.
+
+### Changed
+
+- `app/templates/base.html` browser tab title shortened from the long
+  "Lightwell Patch Pipeline Demo" (invisible in a browser tab) to
+  `RHLW App - {ENV}` (e.g. `RHLW App - DEV`).
+- Navbar brand mark swapped from a plain colored dot to a 🔦 flashlight
+  emoji.
+
 ## 2026-09-11 — Refocus dashboard on Lightwell package provenance
 
 ### Added
