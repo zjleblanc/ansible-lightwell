@@ -164,6 +164,16 @@ main {
   transform: translateY(-2px);
 }
 
+.card-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 720px) {
+  .card-wide {
+    grid-column: span 1;
+  }
+}
+
 .card h2 {
   margin-top: 0;
   font-size: 1.05rem;
@@ -172,34 +182,56 @@ main {
   letter-spacing: 0.05em;
 }
 
-.package-list, .feature-list {
+.package-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.package-list li, .feature-list li {
+.package-list li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--lw-panel-border);
   gap: 0.5rem;
 }
 
-.package-list li:last-child, .feature-list li:last-child {
+.package-list li:last-child {
   border-bottom: none;
+}
+
+.pkg-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 .pkg-name {
   font-weight: 600;
-  margin-right: 0.5rem;
 }
 
-.pkg-version, .pkg-role {
+.pkg-version {
   color: var(--lw-text-muted);
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 0.85rem;
+}
+
+.rhlw-tag {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  color: var(--lw-red);
+  background: rgba(238, 0, 0, 0.12);
+  border: 1px solid rgba(238, 0, 0, 0.35);
+}
+
+.pkg-role {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--lw-text-muted);
+  font-size: 0.8rem;
 }
 
 .badge {
@@ -221,21 +253,36 @@ main {
   border: 1px solid var(--lw-panel-border);
 }
 
-.feature-toggle {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
+.patch-source-name {
+  font-weight: 600;
+  margin: 0 0 0.25rem;
 }
 
-.feature-toggle.on {
-  color: var(--lw-green);
-  background: rgba(46, 204, 113, 0.12);
-}
-
-.feature-toggle.off {
+.patch-source-provider {
   color: var(--lw-text-muted);
-  background: rgba(154, 162, 177, 0.12);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.patch-source-url {
+  display: block;
+  color: var(--lw-red);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.patch-source-url:hover {
+  text-decoration: underline;
+}
+
+.patch-source-count {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--lw-panel-border);
+  color: var(--lw-text-muted);
+  font-size: 0.85rem;
 }
 
 .code-panel {

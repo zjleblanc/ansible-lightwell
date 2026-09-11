@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
@@ -20,6 +21,8 @@ REQUIREMENTS_PATH = APP_ROOT / "requirements.txt"
 
 TRACKED_PACKAGES = ("Flask", "PyYAML", "Jinja2", "gunicorn", "Pygments")
 
+LIGHTWELL_SUFFIX_RE = re.compile(r"\.rhlw-(?P<patch_id>\w+)$")
+
 
 def load_config() -> dict[str, Any]:
     """Load the application's YAML configuration file via PyYAML."""
@@ -27,19 +30,38 @@ def load_config() -> dict[str, Any]:
         return yaml.safe_load(config_file)
 
 
-def get_package_versions() -> list[dict[str, Any]]:
-    """Report installed versions of tracked dependencies."""
+def parse_lightwell_version(version: str) -> tuple[str, str | None]:
+    """Split a version string into (base_version, rhlw_patch_id).
+
+    Lightwell-remediated wheels append a `.rhlw-<id>` suffix to the
+    upstream version, e.g. "6.0.2.rhlw-00001". Returns (version, None)
+    when no such suffix is present.
+    """
+    match = LIGHTWELL_SUFFIX_RE.search(version)
+    if not match:
+        return version, None
+    return version[: match.start()], match.group("patch_id")
+
+
+def get_package_versions(tracked_deps: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Report installed versions of tracked dependencies, annotated with
+    Lightwell provenance (from the version string) and role metadata from
+    app_config.yaml."""
+    dep_by_name = {dep["name"]: dep for dep in (tracked_deps or [])}
     versions = []
     for package_name in TRACKED_PACKAGES:
         try:
-            version = metadata.version(package_name)
+            raw_version = metadata.version(package_name)
         except metadata.PackageNotFoundError:
-            version = "unknown"
+            raw_version = "unknown"
+        base_version, patch_id = parse_lightwell_version(raw_version)
         versions.append(
             {
                 "name": package_name,
-                "version": version,
-                "is_patched": ".rhlw" in version,
+                "version": base_version,
+                "is_lightwell": patch_id is not None,
+                "lightwell_patch_id": patch_id,
+                "role": dep_by_name.get(package_name, {}).get("role", ""),
             }
         )
     return versions
@@ -74,13 +96,16 @@ def create_app() -> Flask:
     @app.get("/")
     def dashboard():
         config_data = app.config["CONFIG_DATA"]
+        tracked_deps = config_data.get("dependencies", {}).get("tracked", [])
+        package_versions = get_package_versions(tracked_deps)
         return render_template(
             "dashboard.html",
             service=config_data.get("service", {}),
-            features=config_data.get("features", {}),
-            dependencies=config_data.get("dependencies", {}).get("tracked", []),
+            patch_source=config_data.get("patch_source", {}),
+            package_versions=package_versions,
+            lightwell_count=sum(1 for pkg in package_versions if pkg["is_lightwell"]),
+            tracked_count=len(package_versions),
             patch_timeline=config_data.get("patch_timeline", []),
-            package_versions=get_package_versions(),
             requirements_snippet=get_requirements_snippet(),
             now=datetime.now(UTC),
         )

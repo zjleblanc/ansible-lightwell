@@ -7,11 +7,10 @@ service:
     with Renovate and Ansible Automation Platform.
   version: "1.0.3"
 
-features:
-  dark_mode: true
-  patch_timeline: true
-  auto_refresh: false
-  lightwell_remediated_tier: true
+patch_source:
+  name: Lightwell Remediated Index
+  url: https://packages.redhat.com/lightwell/python/remediated/simple
+  provider: Red Hat & IBM
 
 dependencies:
   tracked:
@@ -21,6 +20,10 @@ dependencies:
       role: Renders the dashboard templates you're looking at right now
     - name: Flask
       role: Serves the web dashboard and the /healthz endpoint
+    - name: gunicorn
+      role: Runs the production WSGI server inside the container
+    - name: Pygments
+      role: Syntax-highlights the requirements.txt snippet below
 
 patch_timeline:
   - date: "2026-06-01"

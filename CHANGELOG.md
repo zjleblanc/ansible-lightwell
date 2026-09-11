@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-09-11 — Refocus dashboard on Lightwell package provenance
+
+### Added
+
+- `app/templates/dashboard.html` gains a "Patch Source" card showing the
+  Lightwell Remediated Index name, provider, and URL, plus a live count of
+  how many tracked packages are currently sourced from Lightwell.
+- `app/app.py` gains `parse_lightwell_version()`, which splits an
+  installed package's version into a clean base version and its
+  `.rhlw-<id>` patch identifier (e.g. `6.0.2.rhlw-00001` ->
+  `6.0.2` + `00001`). The dashboard now surfaces the patch id as its own
+  tag next to the version instead of burying it in the raw string.
+- `app/config/app_config.yaml` dependency tracking list gains `gunicorn`
+  and `Pygments` entries with role descriptions, so all five tracked
+  packages now show a role in the dashboard.
+
+### Changed
+
+- Merged the previously separate "Dependency Status" and "Tracked
+  Libraries" cards in `app/templates/dashboard.html` into a single card
+  showing version, role, and provenance badge for all five tracked
+  packages.
+- Package badge simplified to a straight `Lightwell` vs `PyPI`
+  classification, derived purely from whether the installed version
+  string contains a `.rhlw` suffix. Previously relied on a manually
+  curated `lightwell: true/false` flag per package in
+  `app_config.yaml`, which added a third "Awaiting Patch" state that
+  couldn't be verified at runtime.
+- `app/static/style.css` reworked package list and badge styles to match
+  (`.pkg-header`, `.rhlw-tag`, `.patch-source-*`, `.card-wide`).
+
+### Removed
+
+- Feature Flags card and the backing `features:` block in
+  `app_config.yaml` -- the flags (`dark_mode`, `patch_timeline`,
+  `auto_refresh`, `lightwell_remediated_tier`) were display-only and had
+  no effect on app behavior.
+- `.badge-awaiting` / `--lw-amber` CSS, no longer used now that the badge
+  is binary.
+
 ## 2026-09-11 — Auto-bump app version on Renovate dependency updates
 
 ### Added
