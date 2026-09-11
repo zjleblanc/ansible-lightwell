@@ -22,7 +22,7 @@
         event.payload.action in ["opened", "synchronize", "reopened"]
       action:
         run_job_template:
-          name: Lightwell Python // Build & Test
+          name: Lightwell // Build & Test
           organization: Autodotes
           job_args:
             extra_vars:
@@ -39,7 +39,7 @@
         event.payload.action in ["opened", "synchronize", "reopened"]
       action:
         run_job_template:
-          name: Lightwell Java // Build & Test
+          name: Lightwell // Build & Test
           organization: Autodotes
           job_args:
             extra_vars:
@@ -58,7 +58,7 @@
         event.payload.head_commit.message is match("(?i)reset python.*")
       action:
         run_job_template:
-          name: Lightwell Python // Build & Test
+          name: Lightwell // Build & Test
           organization: Autodotes
           job_args:
             extra_vars:
@@ -76,7 +76,7 @@
         event.payload.head_commit.message is match("(?i)reset java.*")
       action:
         run_job_template:
-          name: Lightwell Java // Build & Test
+          name: Lightwell // Build & Test
           organization: Autodotes
           job_args:
             extra_vars:
@@ -95,7 +95,7 @@
         event.payload.head_commit.committer.username == "web-flow"
       action:
         run_job_template:
-          name: Lightwell Python // Deploy Prod
+          name: Lightwell // Deploy Prod
           organization: Autodotes
           job_args:
             extra_vars:
@@ -114,7 +114,7 @@
         event.payload.head_commit.committer.username == "web-flow"
       action:
         run_job_template:
-          name: Lightwell Java // Deploy Prod
+          name: Lightwell // Deploy Prod
           organization: Autodotes
           job_args:
             extra_vars:
