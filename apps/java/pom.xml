@@ -21,13 +21,12 @@
 
   <properties>
     <java.version>21</java.version>
-    <org.json.version>20240303</org.json.version>
   </properties>
 
   <!--
-    Lightwell Remediated repository is the primary source for org.json:json
-    and org.springframework:spring-core; Maven Central is the fallback for
-    every other dependency. Ordered so Maven checks Lightwell first.
+    Lightwell Remediated repository is the primary source for org.json:json;
+    Maven Central is the fallback for every other dependency. Ordered so
+    Maven checks Lightwell first.
   -->
   <repositories>
     <repository>
@@ -52,7 +51,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>${org.json.version}</version>
+      <version>20220320</version>
     </dependency>
 
     <dependency>

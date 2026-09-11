@@ -59,13 +59,16 @@ apps/java/
 
 ## Tracked dependencies
 
-Lightwell currently remediates `org.json:json` and
-`org.springframework:spring-core` for Java (mirroring PyYAML/Jinja2 for
-Python). All five tracked dependencies -- `spring-core`, `json`,
-`spring-boot`, `thymeleaf`, `snakeyaml` -- are shown on the dashboard;
-only the two Lightwell-remediated ones will ever carry the
-`.rhlw-0000X` suffix and the "Lightwell" badge once Renovate bumps them
-to a remediated version. The rest show a "Maven Central" badge.
+Lightwell currently remediates `org.json:json` for Java (mirroring
+PyYAML/Jinja2 for Python). All five tracked dependencies --
+`spring-core`, `json`, `spring-boot`, `thymeleaf`, `snakeyaml` -- are
+shown on the dashboard; only `json` is pinned to an explicit,
+Renovate-visible version in `pom.xml`, so it's the one that will carry
+the `.rhlw-0000X` suffix and the "Lightwell" badge once Renovate bumps it
+to a remediated version. `spring-core` is pulled in transitively (via
+`spring-boot-starter-web`) with no explicit version in `pom.xml`, so
+Renovate has nothing to bump for it -- it always shows a "Maven Central"
+badge. The rest show a "Maven Central" badge too.
 
 ## Local development
 

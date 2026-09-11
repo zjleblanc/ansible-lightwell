@@ -36,7 +36,7 @@
       "matchManagers": ["maven"],
       "matchFileNames": ["apps/java/**"],
       "matchDatasources": ["maven"],
-      "matchPackageNames": ["org.json:json", "org.springframework:spring-core"],
+      "matchPackageNames": ["org.json:json"],
       "enabled": true,
       "registryUrls": [
         "https://packages.redhat.com/lightwell/java/remediated",
